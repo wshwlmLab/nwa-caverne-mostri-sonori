@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<title>NWA — Le Caverne dei Mostri Sonori · V3 Mobile</title>
+<style>
+  :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; width:100%; height:100%; min-height:100%; background:#05070b; overflow:hidden; overscroll-behavior:none; }
+  body { display:grid; place-items:center; position:fixed; inset:0; touch-action:none; -webkit-user-select:none; user-select:none; }
+  #wrap { position:relative; width:100vw; height:100vh; height:100dvh; background:#05070b; overflow:hidden; }
+  canvas { width:100%; height:100%; display:block; image-rendering:auto; touch-action:none; }
+  #hud { position:absolute; top:14px; left:14px; right:14px; display:flex; justify-content:space-between; gap:10px; pointer-events:none; font-weight:800; text-shadow:0 2px 10px #000; z-index:4; }
+  .chip { background:rgba(0,0,0,.42); border:1px solid rgba(255,255,255,.18); padding:8px 11px; border-radius:999px; backdrop-filter:blur(8px); }
+  #overlay { position:absolute; inset:0; display:grid; place-items:center; z-index:8; background:rgba(0,0,0,.55); backdrop-filter:blur(7px); padding:20px; }
+  #overlay.hidden { display:none; }
+  .panel { width:min(680px, 94vw); border:1px solid rgba(255,255,255,.18); border-radius:24px; padding:28px; background:linear-gradient(180deg,rgba(18,24,34,.96),rgba(7,9,14,.96)); box-shadow:0 25px 90px rgba(0,0,0,.55); text-align:center; }
+  h1 { margin:0 0 8px; font-size:clamp(30px,5vw,58px); line-height:.96; letter-spacing:-.04em; }
+  h2 { margin:0 0 12px; font-size:clamp(25px,4vw,42px); }
+  p { color:#d7dbe4; line-height:1.5; }
+  .eyebrow { letter-spacing:.22em; text-transform:uppercase; font-size:12px; color:#9cc9ff; font-weight:900; margin-bottom:14px; }
+  button { border:0; border-radius:14px; padding:13px 18px; font-weight:900; font-size:16px; cursor:pointer; color:#081018; background:#b9e7ff; box-shadow:0 8px 30px rgba(0,0,0,.25); margin:6px; }
+  button:hover { transform:translateY(-1px); }
+  .answer { display:block; width:100%; margin:9px 0; background:#151b26; color:white; border:1px solid rgba(255,255,255,.15); text-align:left; }
+  .answer:hover { background:#20293a; }
+  .small { font-size:13px; color:#aeb6c5; }
+  .mobileHelp { display:none; }
+  kbd { border:1px solid #566175; border-bottom-width:3px; border-radius:6px; padding:2px 6px; background:#111722; color:#fff; font-family:inherit; font-weight:900; }
+  #toast { position:absolute; left:50%; bottom:22px; transform:translateX(-50%); z-index:7; padding:10px 16px; border-radius:999px; background:rgba(0,0,0,.7); border:1px solid rgba(255,255,255,.17); font-weight:800; opacity:0; transition:opacity .2s; pointer-events:none; white-space:nowrap; max-width:90vw; overflow:hidden; text-overflow:ellipsis; }
+  #toast.show { opacity:1; }
+  #mobile { display:none !important; }
+  #rotateOverlay { display:none; position:absolute; inset:0; z-index:30; background:radial-gradient(circle at 50% 35%,rgba(34,52,76,.96),rgba(5,7,11,.99) 68%); place-items:center; padding:28px; text-align:center; }
+  #rotateOverlay .rotateCard { max-width:420px; }
+  #rotateOverlay .phone { width:72px; height:118px; margin:0 auto 22px; border:4px solid #dff4ff; border-radius:16px; position:relative; transform:rotate(-90deg); animation:tilt 1.8s ease-in-out infinite alternate; box-shadow:0 0 40px rgba(142,218,255,.18); }
+  #rotateOverlay .phone:after { content:''; position:absolute; width:22px; height:4px; border-radius:4px; background:#dff4ff; left:50%; bottom:7px; transform:translateX(-50%); }
+  #rotateOverlay h2 { margin-bottom:8px; }
+  #rotateOverlay p { margin:0; color:#bfc8d8; }
+  @keyframes tilt { from { transform:rotate(-84deg) scale(.98); } to { transform:rotate(-96deg) scale(1.03); } }
+  #touchGuide { display:none; position:absolute; inset:0; z-index:6; pointer-events:none; opacity:0; transition:opacity .5s ease; }
+  #touchGuide.show { opacity:1; }
+  .gestureHint { position:absolute; bottom:max(24px,env(safe-area-inset-bottom)); min-width:150px; padding:11px 15px; border-radius:18px; background:rgba(6,10,16,.46); border:1px solid rgba(255,255,255,.14); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); color:rgba(255,255,255,.88); font-size:12px; font-weight:900; letter-spacing:.06em; text-align:center; text-shadow:0 2px 10px #000; }
+  #moveHint { left:max(18px,env(safe-area-inset-left)); }
+  #fireHint { right:max(18px,env(safe-area-inset-right)); }
+  .gestureHint b { display:block; font-size:18px; letter-spacing:0; margin-bottom:2px; }
+  #touchFeedback { display:none; position:absolute; inset:0; z-index:5; pointer-events:none; }
+  .touchRing { position:absolute; width:58px; height:58px; margin:-29px 0 0 -29px; border-radius:50%; border:2px solid rgba(196,235,255,.72); box-shadow:0 0 26px rgba(123,211,255,.25), inset 0 0 20px rgba(123,211,255,.08); opacity:0; transform:scale(.7); transition:opacity .14s,transform .14s; }
+  .touchRing.on { opacity:.8; transform:scale(1); }
+  @media (pointer:coarse) {
+    #touchGuide, #touchFeedback { display:block; }
+    #hud { top:max(10px,env(safe-area-inset-top)); left:max(12px,env(safe-area-inset-left)); right:max(12px,env(safe-area-inset-right)); }
+    #toast { bottom:max(18px,env(safe-area-inset-bottom)); }
+    .panel { width:min(680px,92vw); max-height:92dvh; overflow:auto; padding:22px; }
+    h1 { font-size:clamp(27px,7vh,54px); }
+    h2 { font-size:clamp(23px,6vh,40px); }
+    .desktopHelp { display:none; }
+    .mobileHelp { display:block !important; }
+  }
+  @media (orientation:portrait) and (max-width: 1100px) {
+    #rotateOverlay { display:grid; }
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="1280" height="720"></canvas>
+  <div id="hud">
+    <div class="chip" id="hudLeft">NWA · Livello 1/10</div>
+    <div class="chip" id="hudRight">❤️❤️❤️ · 🪙 0</div>
+  </div>
+  <div id="toast"></div>
+  <div id="overlay"></div>
+  <div id="mobile" aria-hidden="true"></div>
+  <div id="touchGuide" aria-hidden="true">
+    <div class="gestureHint" id="moveHint"><b>↔ &nbsp; ↑</b>TRASCINA · SWIPE PER SALTARE</div>
+    <div class="gestureHint" id="fireHint"><b>◉</b>TOCCA PER SPARARE</div>
+  </div>
+  <div id="touchFeedback" aria-hidden="true"><div class="touchRing" id="moveRing"></div><div class="touchRing" id="fireRing"></div></div>
+  <div id="rotateOverlay" aria-live="polite"><div class="rotateCard"><div class="phone"></div><h2>RUOTA IL TELEFONO</h2><p>Le Caverne NWA si giocano in orizzontale.</p></div></div>
+</div>
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('overlay');
+  const hudLeft = document.getElementById('hudLeft');
+  const hudRight = document.getElementById('hudRight');
+  const toast = document.getElementById('toast');
+  const W = canvas.width, H = canvas.height;
+  const keys = new Set();
+  const riddleBanks = {
+    tabelline: [
+      {q:'Quanto fa 7 × 8?', a:['54','56','64'], ok:1},
+      {q:'Quanto fa 9 × 6?', a:['54','63','49'], ok:0},
+      {q:'Quanto fa 8 × 4?', a:['24','32','36'], ok:1},
+      {q:'Quanto fa 6 × 7?', a:['40','42','48'], ok:1},
+      {q:'Quanto fa 9 × 9?', a:['72','81','99'], ok:1},
+      {q:'Quanto fa 12 × 4?', a:['36','48','52'], ok:1}
+    ],
+    verbi: [
+      {q:'Nella frase “Ieri noi giocavamo”, che tempo è “giocavamo”?', a:['Imperfetto','Futuro semplice','Passato remoto'], ok:0},
+      {q:'Qual è il futuro semplice di “io mangio”?', a:['Io mangiavo','Io mangerò','Io mangiai'], ok:1},
+      {q:'Quale di questi verbi è al passato remoto?', a:['Camminavo','Camminerò','Camminai'], ok:2},
+      {q:'In “che io sia”, il verbo è nel modo…', a:['Indicativo','Congiuntivo','Imperativo'], ok:1},
+      {q:'Qual è l’infinito di “correvano”?', a:['Correre','Corso','Correndo'], ok:0},
+      {q:'“Noi avremmo giocato” è…', a:['Condizionale passato','Indicativo presente','Congiuntivo imperfetto'], ok:0}
+    ],
+    storia: [
+      {q:'Quale civiltà costruì le grandi piramidi di Giza?', a:['Egizi','Fenici','Romani'], ok:0},
+      {q:'A cosa serviva soprattutto la scrittura cuneiforme nelle prime città mesopotamiche?', a:['Anche a registrare merci e scambi','A pilotare le navi','A costruire strade'], ok:0},
+      {q:'Quale popolo antico è famoso per l’alfabeto diffuso attraverso i commerci nel Mediterraneo?', a:['Fenici','Sumeri','Etruschi'], ok:0},
+      {q:'Nell’antica Grecia, una polis era…', a:['Una città-stato','Una nave da guerra','Una piramide'], ok:0},
+      {q:'Il Nilo era importantissimo per gli Egizi soprattutto perché…', a:['Rendeva fertili i campi','Era fatto di acqua salata','Separava l’Egitto dalla Luna'], ok:0},
+      {q:'Quale invenzione rese possibile conservare e trasmettere molte informazioni nel tempo?', a:['La scrittura','Il fuoco soltanto','La ruota soltanto'], ok:0}
+    ],
+    geografia: [
+      {q:'Che cosa indica una carta geografica fisica?', a:['Rilievi, pianure, fiumi e mari','Solo i nomi delle squadre','Solo le strade di una città'], ok:0},
+      {q:'Qual è la catena montuosa che attraversa gran parte della penisola italiana?', a:['Appennini','Ande','Himalaya'], ok:0},
+      {q:'Quale mare bagna la costa occidentale dell’Italia centrale?', a:['Mar Tirreno','Mar Nero','Mar Baltico'], ok:0},
+      {q:'Il clima dipende anche da…', a:['Altitudine e distanza dal mare','Colore delle automobili','Numero di palazzi'], ok:0},
+      {q:'Una pianura è un territorio…', a:['Prevalentemente piatto','Sempre coperto di neve','Più alto di una montagna'], ok:0},
+      {q:'Che cosa rappresenta la scala di una carta geografica?', a:['Il rapporto tra distanza sulla carta e distanza reale','La temperatura','L’altezza degli alberi'], ok:0}
+    ],
+    logica: [
+      {q:'Hai 3 scatole. In ogni scatola ci sono 4 sfere sonore. Quante sfere hai in tutto?', a:['7','12','16'], ok:1},
+      {q:'Completa la sequenza: 2, 4, 8, 16, …', a:['18','24','32'], ok:2},
+      {q:'Un mostro dice sempre il contrario della verità. Dice: “La porta è a sinistra”. Dove conviene provare?', a:['A sinistra','A destra','Restare fermi'], ok:1},
+      {q:'Più ne togli, più diventa grande. Che cos’è?', a:['Un buco','Una montagna','Un tamburo'], ok:0},
+      {q:'Ha città senza case, fiumi senza acqua e montagne senza alberi. Cos’è?', a:['Una mappa','Un castello','Una radio'], ok:0},
+      {q:'Se hai tre mele e ne prendi due, quante mele hai con te?', a:['Una','Due','Tre'], ok:1},
+      {q:'Può riempire una stanza ma non occupa spazio. Cos’è?', a:['La luce','La sabbia','Una sedia'], ok:0},
+      {q:'Parla senza bocca e risponde senza orecchie. Cos’è?', a:['L’eco','Il vento','Un libro'], ok:0}
+    ]
+  };
+  let lastRiddleKey = '';
+  function pickRiddle(){
+    const cats=Object.keys(riddleBanks);
+    let cat, i, key;
+    do {
+      cat=cats[Math.floor(Math.random()*cats.length)];
+      i=Math.floor(Math.random()*riddleBanks[cat].length);
+      key=cat+':'+i;
+    } while(key===lastRiddleKey);
+    lastRiddleKey=key;
+    return {...riddleBanks[cat][i], category:cat};
+  }
+
+  let audioCtx = null;
+  function ensureAudio(){
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  function tone(freq=440, duration=.09, type='sine', gain=.05, slide=0){
+    ensureAudio();
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq,audioCtx.currentTime);
+    if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(40,freq+slide),audioCtx.currentTime+duration);
+    g.gain.setValueAtTime(gain,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+duration);
+    o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+duration);
+  }
+  function noise(duration=.08, gain=.035){
+    ensureAudio();
+    const b=audioCtx.createBuffer(1, audioCtx.sampleRate*duration, audioCtx.sampleRate); const d=b.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);
+    const s=audioCtx.createBufferSource(), g=audioCtx.createGain(); s.buffer=b; g.gain.value=gain; s.connect(g).connect(audioCtx.destination); s.start();
+  }
+  const sfx = {
+    shoot(){ tone(240,.10,'sine',.055,340); tone(480,.07,'triangle',.025,120); },
+    coin(){ tone(780,.06,'sine',.05,220); setTimeout(()=>tone(1050,.08,'sine',.04,180),45); },
+    hit(){ noise(.12,.06); tone(90,.15,'sawtooth',.04,-25); },
+    enemy(){ tone(130,.13,'square',.035,40); },
+    jump(){ tone(210,.08,'triangle',.025,70); },
+    correct(){ [440,660,880].forEach((f,i)=>setTimeout(()=>tone(f,.12,'sine',.04,80),i*90)); },
+    wrong(){ tone(160,.18,'sawtooth',.05,-70); },
+    boss(){ tone(65,.45,'sawtooth',.07,35); },
+    power(){ [320,520,760,1040].forEach((f,i)=>setTimeout(()=>tone(f,.11,'triangle',.045,120),i*55)); },
+    shield(){ tone(180,.10,'sine',.04,300); setTimeout(()=>tone(620,.18,'sine',.035,-120),60); },
+    bossJump(){ tone(85,.20,'square',.045,90); },
+    bossShot(){ tone(105,.17,'sawtooth',.045,100); },
+    smallShot(){ tone(185,.09,'square',.018,80); }
+  };
+
+  const state = {
+    screen:'title', level:1, lives:5, coins:0, score:0, cameraX:0, area:'cave',
+    world:null, projectiles:[], enemyShots:[], particles:[], lastTime:0, invuln:0, puzzleOpen:false, currentRiddle:null,
+    power:'none', powerTimer:0, shield:0
+  };
+  const player = {x:90,y:500,w:42,h:58,vx:0,vy:0,onGround:false,dir:1,cool:0};
+
+  function seededRandom(seed){ let s=seed>>>0; return () => ((s=(s*1664525+1013904223)>>>0)/4294967296); }
+  function makeLevel(n){
+    const rnd=seededRandom(90210+n*777);
+    const length = 2350 + n*130;
+    const groundY = 610;
+    const platforms=[];
+    for(let x=380;x<length-480;x+=340+rnd()*140){
+      const y=groundY-(90+rnd()*150); platforms.push({x,y,w:130+rnd()*120,h:22});
+    }
+    const coins=[];
+    for(let x=220;x<length-300;x+=180+rnd()*120){ coins.push({x,y:groundY-50-(rnd()>.65?100:0),r:12,taken:false,bob:rnd()*6.2}); }
+    const enemies=[];
+    const count = 2+Math.floor(n*.55);
+    for(let i=0;i<count;i++){
+      const x=520+i*((length-1050)/Math.max(1,count))+rnd()*100;
+      enemies.push({x,y:groundY-46,w:48,h:46,hp:5,maxHp:5,vx:(rnd()>.5?1:-1)*(38+n*2),baseX:x,range:75+rnd()*85,dead:false,phase:rnd()*6.28,shootCool:1.4+rnd()*1.6});
+    }
+    const bossHp = 6 + n;
+    const boss={
+      x:930,y:groundY-125,w:125,h:125,hp:bossHp,maxHp:bossHp,dead:false,
+      cool:1.75,phase:rnd()*6.28,vx:-(48+n*3),vy:0,onGround:true,
+      arenaLeft:500,arenaRight:1160,jumpCool:1.8+rnd()*1.2,kind:(n-1)%3
+    };
+    const powerTypes=['echo','rapid','shield'];
+    const orb={x:Math.floor(length*.48),y:groundY-90,r:19,taken:false,bob:rnd()*6.2,type:powerTypes[(n-1)%powerTypes.length]};
+    return {length,groundY,platforms,coins,enemies,boss,orb,arenaDoorX:length-165,arenaEntered:false,gateSolved:false};
+  }
+
+  function resetPlayer(){ player.x=90; player.y=500; player.vx=player.vy=0; state.cameraX=0; state.projectiles=[]; state.enemyShots=[]; state.invuln=1.1; state.power='none'; state.powerTimer=0; state.shield=0; state.area='cave'; }
+  function loadLevel(n){ state.level=n; state.world=makeLevel(n); resetPlayer(); state.currentRiddle=pickRiddle(); state.screen='play'; state.puzzleOpen=false; updateHud(); showToast(`Livello ${n}: esplora la caverna e raggiungi la porta ARENA!`,2300); }
+
+  function updateHud(){
+    hudLeft.textContent=`NWA · Livello ${state.level}/10`;
+    const pow=state.power==='echo'?'🔵 ECO':state.power==='rapid'?'⚡ RAPIDO':state.shield>0?'🛡️ SCUDO':'';
+    hudRight.textContent=`${'❤️'.repeat(Math.max(0,state.lives))} · 🪙 ${state.coins}${pow?' · '+pow:''}`;
+  }
+  let toastTimer;
+  function showToast(msg,ms=1700){ toast.textContent=msg; toast.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.classList.remove('show'),ms); }
+
+  function showTitle(){
+    state.screen='title';
+    overlay.classList.remove('hidden');
+    overlay.innerHTML=`<div class="panel"><div class="eyebrow">NWA · National Weird Acoustics · VERSIONE 3</div><h1>LE CAVERNE DEI<br>MOSTRI SONORI</h1><p>Un archeologo-esploratore, capo dell’agenzia NWA, attraversa le caverne, affronta mostri sonori e raggiunge l’ARENA dei Guardiani.</p><p class="desktopHelp"><kbd>←</kbd> <kbd>→</kbd> muovi · <kbd>↑</kbd> salta · <kbd>SPAZIO</kbd> onda sonora</p><p class="mobileHelp">Trascina a sinistra per muoverti · swipe ↑ per saltare · tocca a destra per lanciare l’onda sonora.</p><button id="startBtn">ENTRA NELLE CAVERNE</button><div class="small">10 livelli · 5 vite · mostri con 5 HP · porta ARENA · guardiani · domande di quarta + logica</div></div>`;
+    document.getElementById('startBtn').onclick=()=>{ensureAudio(); enterMobileMode(); state.lives=5;state.coins=0;state.score=0;loadLevel(1);overlay.classList.add('hidden');showTouchGuide();};
+  }
+
+  function openPuzzle(){
+    if(state.puzzleOpen) return; state.puzzleOpen=true; state.screen='puzzle';
+    const r=state.currentRiddle || pickRiddle(); overlay.classList.remove('hidden');
+    overlay.innerHTML=`<div class="panel"><div class="eyebrow">PROVA NWA · ${String(r.category||'logica').toUpperCase()}</div><h2>${r.q}</h2><div id="answers"></div><p class="small">Domande casuali: tabelline, verbi, storia, geografia, logica e curiosità.</p></div>`;
+    const ans=document.getElementById('answers');
+    r.a.forEach((txt,i)=>{ const b=document.createElement('button'); b.className='answer'; b.textContent=`${i+1}. ${txt}`; b.onclick=()=>answerPuzzle(i); ans.appendChild(b); });
+  }
+  function answerPuzzle(i){
+    const r=state.currentRiddle;
+    if(i===r.ok){ sfx.correct(); state.world.gateSolved=true; state.puzzleOpen=false; showToast('Prova superata! Livello completato.'); completeLevel(); }
+    else { sfx.wrong(); state.currentRiddle=pickRiddle(); loseLife('Risposta sbagliata: il livello ricomincia con una nuova domanda.'); overlay.classList.add('hidden'); state.puzzleOpen=false; }
+  }
+
+  function loseLife(reason){
+    if(state.screen==='gameover')return;
+    if(state.shield>0){ state.shield=0; state.invuln=1.2; sfx.shield(); updateHud(); showToast('Lo SCUDO SONORO ha assorbito il colpo!'); return; }
+    state.lives--; updateHud(); sfx.hit();
+    if(state.lives<=0){
+      state.screen='gameover'; overlay.classList.remove('hidden');
+      overlay.innerHTML=`<div class="panel"><div class="eyebrow">MISSIONE INTERROTTA</div><h2>Le caverne hanno vinto… per ora.</h2><p>Monete raccolte: <b>${state.coins}</b></p><button id="retry">RIPROVA DALL’INIZIO</button></div>`;
+      document.getElementById('retry').onclick=()=>{state.lives=5;state.coins=0;loadLevel(1);overlay.classList.add('hidden');};
+    } else { showToast(reason); loadLevel(state.level); overlay.classList.add('hidden'); }
+  }
+
+  function enterArena(){
+    if(state.area==='arena') return;
+    state.area='arena'; state.world.arenaEntered=true; state.enemyShots=[]; state.projectiles=[];
+    player.x=180; player.y=state.world.groundY-player.h; player.vx=player.vy=0; state.cameraX=0; state.invuln=1.2;
+    const b=state.world.boss; b.x=930; b.y=state.world.groundY-b.h; b.vx=-Math.abs(b.vx); b.vy=0; b.onGround=true; b.cool=1.8; b.jumpCool=1.8;
+    sfx.boss(); showToast(`ARENA ${state.level}: sconfiggi il Guardiano Sonoro!`,2600);
+  }
+
+  function completeLevel(){
+    state.screen='leveldone';
+    overlay.classList.remove('hidden');
+    if(state.level<10){
+      overlay.innerHTML=`<div class="panel"><div class="eyebrow">MISSIONE NWA</div><h2>Livello ${state.level} completato!</h2><p>La caverna continua più in profondità.</p><button id="next">LIVELLO ${state.level+1}</button></div>`;
+      document.getElementById('next').onclick=()=>{loadLevel(state.level+1);overlay.classList.add('hidden');};
+    } else {
+      state.screen='win';
+      overlay.innerHTML=`<div class="panel"><div class="eyebrow">ARCHIVIO NWA · CASO CHIUSO</div><h1>AVETE SCONFITTO<br>IL TUONO ANTICO!</h1><p>L’archeologo è uscito dalle caverne con <b>${state.coins} monete</b> e la prova che i mostri sonori esistono davvero.</p><button id="again">GIOCA ANCORA</button><p class="small">Noah + Ambrogio = Agenti NWA di livello 10.</p></div>`;
+      document.getElementById('again').onclick=()=>{state.lives=5;state.coins=0;loadLevel(1);overlay.classList.add('hidden');};
+    }
+  }
+
+  function rects(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
+  function circleRect(c,r){const cx=Math.max(r.x,Math.min(c.x,r.x+r.w));const cy=Math.max(r.y,Math.min(c.y,r.y+r.h));const dx=c.x-cx,dy=c.y-cy;return dx*dx+dy*dy<c.r*c.r;}
+  function shoot(){
+    if(player.cool>0||state.screen!=='play')return;
+    player.cool=state.power==='rapid'?.11:.24; sfx.shoot();
+    const boosted=state.power==='echo';
+    state.projectiles.push({x:player.x+player.w/2+player.dir*22,y:player.y+26,vx:player.dir*(boosted?760:620),r:boosted?18:10,life:boosted?1.6:1.25,damage:boosted?2:1});
+  }
+
+  const coarsePointer = window.matchMedia('(pointer:coarse)').matches || navigator.maxTouchPoints > 0;
+  const touchGuide = document.getElementById('touchGuide');
+  const moveRing = document.getElementById('moveRing');
+  const fireRing = document.getElementById('fireRing');
+  let guideTimer = null;
+  let touchGuideSeen = false;
+  const touchState = new Map();
+  let movePointer = null;
+
+  function enterMobileMode(){
+    if(!coarsePointer) return;
+    // Compatibilita mobile: nessun fullscreen forzato e nessun orientation lock.
+    // Basta ruotare il telefono; il layout landscape si adatta automaticamente.
+    setTimeout(()=>window.scrollTo(0,1),60);
+  }
+  function showTouchGuide(){
+    if(!coarsePointer || touchGuideSeen) return;
+    touchGuide.classList.add('show');
+    clearTimeout(guideTimer);
+    guideTimer=setTimeout(()=>touchGuide.classList.remove('show'),4200);
+  }
+  function hideTouchGuide(){
+    if(!coarsePointer) return;
+    touchGuideSeen=true;
+    touchGuide.classList.remove('show');
+    clearTimeout(guideTimer);
+  }
+  function setRing(el,x,y,on){
+    if(!el) return;
+    el.style.left=x+'px'; el.style.top=y+'px';
+    el.classList.toggle('on',!!on);
+  }
+  function touchJump(){
+    if(player.onGround && state.screen==='play'){
+      player.vy=-555; player.onGround=false; sfx.jump();
+    }
+  }
+  function clearMoveKeys(){ keys.delete('ArrowLeft'); keys.delete('ArrowRight'); }
+  function updateMoveGesture(t){
+    const dx=t.x-t.startX, dy=t.y-t.startY;
+    if(!t.jumped && dy < -42 && Math.abs(dy) > Math.abs(dx)*.72){ t.jumped=true; touchJump(); }
+    if(Math.abs(dx)>14){
+      if(dx<0){ keys.add('ArrowLeft'); keys.delete('ArrowRight'); }
+      else { keys.add('ArrowRight'); keys.delete('ArrowLeft'); }
+    } else clearMoveKeys();
+  }
+  function handleTouchDown(e){
+    if(!coarsePointer || e.pointerType!=='touch' || state.screen!=='play' || !overlay.classList.contains('hidden')) return;
+    e.preventDefault(); ensureAudio(); hideTouchGuide();
+    canvas.setPointerCapture?.(e.pointerId);
+    const x=e.clientX, y=e.clientY;
+    const leftZone=x < window.innerWidth*.56;
+    if(leftZone && movePointer===null){
+      movePointer=e.pointerId;
+      touchState.set(e.pointerId,{type:'move',startX:x,startY:y,x,y,jumped:false});
+      setRing(moveRing,x,y,true);
+    } else {
+      touchState.set(e.pointerId,{type:'fire',startX:x,startY:y,x,y});
+      setRing(fireRing,x,y,true);
+      shoot();
+    }
+  }
+  function handleTouchMove(e){
+    const t=touchState.get(e.pointerId); if(!t) return;
+    e.preventDefault(); t.x=e.clientX; t.y=e.clientY;
+    if(t.type==='move'){ updateMoveGesture(t); setRing(moveRing,t.x,t.y,true); }
+    else setRing(fireRing,t.x,t.y,true);
+  }
+  function handleTouchUp(e){
+    const t=touchState.get(e.pointerId); if(!t) return;
+    e.preventDefault();
+    if(t.type==='move'){
+      if(movePointer===e.pointerId) movePointer=null;
+      clearMoveKeys(); setRing(moveRing,t.x,t.y,false);
+    } else setRing(fireRing,t.x,t.y,false);
+    touchState.delete(e.pointerId);
+  }
+  canvas.addEventListener('pointerdown',handleTouchDown,{passive:false});
+  canvas.addEventListener('pointermove',handleTouchMove,{passive:false});
+  canvas.addEventListener('pointerup',handleTouchUp,{passive:false});
+  canvas.addEventListener('pointercancel',handleTouchUp,{passive:false});
+  canvas.addEventListener('contextmenu',e=>e.preventDefault());
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden){ clearMoveKeys(); touchState.clear(); movePointer=null; } });
+  window.addEventListener('orientationchange',()=>setTimeout(()=>window.scrollTo(0,1),120));
+
+  function update(dt){
+    if(state.screen!=='play'||!state.world)return;
+    state.invuln=Math.max(0,state.invuln-dt); player.cool=Math.max(0,player.cool-dt);
+    const w=state.world;
+    const speed=260;
+    player.vx=0;
+    if(keys.has('ArrowLeft')||keys.has('KeyA')){player.vx=-speed;player.dir=-1;}
+    if(keys.has('ArrowRight')||keys.has('KeyD')){player.vx=speed;player.dir=1;}
+    if((keys.has('ArrowUp')||keys.has('KeyW'))&&player.onGround){player.vy=-555;player.onGround=false;sfx.jump();}
+    player.vy+=1450*dt;
+    player.x+=player.vx*dt;
+    const maxX=state.area==='arena'?1220-player.w:w.length-player.w;
+    player.x=Math.max(0,Math.min(maxX,player.x));
+    player.y+=player.vy*dt;
+    player.onGround=false;
+    const ground={x:0,y:w.groundY,w:state.area==='arena'?1280:w.length,h:200};
+    const solids=state.area==='arena'?[ground]:[ground,...w.platforms];
+    for(const p of solids){
+      if(rects(player,p)&&player.vy>=0&&player.y+player.h-player.vy*dt<=p.y+8){player.y=p.y-player.h;player.vy=0;player.onGround=true;}
+    }
+    if(player.y>H+150) { loseLife('Sei caduto nell’abisso!'); return; }
+
+    if(state.area==='cave'){
+      for(const c of w.coins){
+        c.bob+=dt*3; if(!c.taken&&circleRect({x:c.x,y:c.y+Math.sin(c.bob)*6,r:c.r},player)){c.taken=true;state.coins++;state.score+=100;sfx.coin();updateHud();}
+      }
+      const orb=w.orb;
+      if(orb&&!orb.taken){
+        orb.bob+=dt*2.5;
+        if(circleRect({x:orb.x,y:orb.y+Math.sin(orb.bob)*9,r:orb.r},player)){
+          orb.taken=true; sfx.power();
+          if(orb.type==='shield'){state.shield=1;state.power='none';showToast('POTERE: SCUDO SONORO! Blocca un colpo.',2400);}
+          else {state.power=orb.type;state.powerTimer=999;showToast(orb.type==='echo'?'POTERE: ECO GIGANTE! Onde più grandi e forti.':'POTERE: RITMO RAPIDO! Spari molto più veloci.',2400);}
+          updateHud();
+        }
+      }
+      for(const e of w.enemies){
+        if(e.dead)continue;
+        e.phase+=dt*3; e.x+=e.vx*dt; if(Math.abs(e.x-e.baseX)>e.range)e.vx*=-1;
+        e.shootCool-=dt;
+        const dist=Math.abs((player.x+player.w/2)-(e.x+e.w/2));
+        if(e.shootCool<=0 && dist<620){
+          e.shootCool=2.1+Math.random()*1.6-Math.min(.45,state.level*.025); sfx.smallShot();
+          const dx=(player.x+player.w/2)-(e.x+e.w/2),dy=(player.y+player.h/2)-(e.y+e.h/2),len=Math.hypot(dx,dy)||1;
+          const ss=135+state.level*4;
+          state.enemyShots.push({source:'small',x:e.x+e.w/2,y:e.y+e.h/2,vx:dx/len*ss,vy:dy/len*ss,r:7,life:4});
+        }
+        if(rects(player,e)&&state.invuln<=0){loseLife('Un mostriciattolo sonoro ti ha colpito!');return;}
+      }
+      if(player.x>w.arenaDoorX-70){ enterArena(); return; }
+    }
+
+    const boss=w.boss;
+    if(state.area==='arena' && boss && !boss.dead){
+      boss.phase+=dt; boss.cool-=dt; boss.jumpCool-=dt;
+      boss.vy+=1450*dt; boss.x+=boss.vx*dt; boss.y+=boss.vy*dt;
+      if(boss.x<boss.arenaLeft){boss.x=boss.arenaLeft;boss.vx=Math.abs(boss.vx);}
+      if(boss.x+boss.w>boss.arenaRight){boss.x=boss.arenaRight-boss.w;boss.vx=-Math.abs(boss.vx);}
+      if(boss.y+boss.h>=w.groundY){boss.y=w.groundY-boss.h;boss.vy=0;boss.onGround=true;}
+      if(boss.onGround&&boss.jumpCool<=0){
+        boss.vy=-(500+state.level*8); boss.onGround=false; boss.jumpCool=Math.max(1.15,2.55-state.level*.08)+Math.random()*1.1; sfx.bossJump();
+      }
+      if(boss.cool<=0){
+        boss.cool=Math.max(.88,1.75-state.level*.065)+Math.random()*.35; sfx.bossShot();
+        const dx=(player.x+player.w/2)-(boss.x+boss.w/2),dy=(player.y+player.h/2)-(boss.y+boss.h/2),len=Math.hypot(dx,dy)||1;
+        const shotSpeed=185+state.level*10;
+        state.enemyShots.push({source:'boss',x:boss.x+boss.w/2,y:boss.y+boss.h/2,vx:dx/len*shotSpeed,vy:dy/len*shotSpeed,r:11+state.level*.35,life:5});
+        if(state.level>=8 && Math.random()>.62) state.enemyShots.push({source:'boss',x:boss.x+boss.w/2,y:boss.y+boss.h/2,vx:dx/len*shotSpeed,vy:dy/len*shotSpeed-90,r:10,life:5});
+      }
+      if(rects(player,boss)&&state.invuln<=0){loseLife(`Il Guardiano Sonoro ${state.level} ti ha travolto!`);return;}
+    }
+
+    for(const p of state.projectiles){
+      p.x+=p.vx*dt;p.life-=dt;
+      if(state.area==='cave'){
+        for(const e of w.enemies){if(!e.dead&&circleRect(p,e)){e.hp-=p.damage||1;p.life=0;sfx.enemy();burst(e.x+e.w/2,e.y+e.h/2);if(e.hp<=0){e.dead=true;state.score+=250;showToast('Mostriciattolo sconfitto!');}break;}}
+      } else if(boss&&!boss.dead&&circleRect(p,boss)){
+        boss.hp-=p.damage||1;p.life=0;sfx.enemy();burst(p.x,p.y,10);
+        if(boss.hp<=0){boss.dead=true;state.score+=2500;sfx.correct();showToast(state.level===10?'IL TUONO ANTICO È CADUTO! Ora la prova finale.':`Guardiano ${state.level} sconfitto! Ora la prova NWA.`,2400); setTimeout(()=>{state.currentRiddle=pickRiddle();openPuzzle();},650);}
+      }
+    }
+    state.projectiles=state.projectiles.filter(p=>p.life>0&&p.x>-100&&p.x<(state.area==='arena'?1380:w.length+100));
+
+    for(const p of state.enemyShots){
+      p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
+      if(circleRect(p,player)&&state.invuln<=0){p.life=0;loseLife(p.source==='small'?'Un piccolo colpo sonoro ti ha raggiunto!':'Un’onda del Guardiano ti ha colpito!');return;}
+    }
+    state.enemyShots=state.enemyShots.filter(p=>p.life>0);
+    for(const p of state.particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;p.vy+=200*dt;}
+    state.particles=state.particles.filter(p=>p.life>0);
+
+    if(state.area==='cave'){
+      state.cameraX += ((player.x-W*.42)-state.cameraX)*Math.min(1,dt*4);
+      state.cameraX=Math.max(0,Math.min(w.length-W,state.cameraX));
+    } else state.cameraX=0;
+  }
+
+  function burst(x,y,n=7){for(let i=0;i<n;i++)state.particles.push({x,y,vx:(Math.random()-.5)*260,vy:(Math.random()-.7)*260,life:.4+Math.random()*.5});}
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    if(state.area==='arena') drawArenaBackground(); else drawBackground();
+    if(!state.world)return;
+    const w=state.world;
+    ctx.save(); ctx.translate(state.area==='arena'?0:-state.cameraX,0);
+    ctx.fillStyle=state.area==='arena'?'#1a1118':'#17151c';ctx.fillRect(0,w.groundY,state.area==='arena'?1280:w.length,H-w.groundY+200);
+    const floorLen=state.area==='arena'?1280:w.length;
+    for(let x=0;x<floorLen;x+=85){ctx.fillStyle=x%170===0?'#26212b':'#201b24';ctx.beginPath();ctx.moveTo(x,w.groundY);ctx.lineTo(x+38,w.groundY-18);ctx.lineTo(x+80,w.groundY);ctx.fill();}
+    if(state.area==='cave'){
+      for(const p of w.platforms){ctx.fillStyle='#2b2732';roundRect(p.x,p.y,p.w,p.h,10,true);ctx.fillStyle='#403948';ctx.fillRect(p.x+12,p.y+3,p.w-24,4);}
+      for(const c of w.coins){if(c.taken)continue;const y=c.y+Math.sin(c.bob)*6;ctx.beginPath();ctx.arc(c.x,y,c.r,0,Math.PI*2);ctx.fillStyle='#ffdb55';ctx.fill();ctx.strokeStyle='#fff4ad';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#6f5410';ctx.font='bold 15px sans-serif';ctx.textAlign='center';ctx.fillText('N',c.x,y+5);}
+      if(w.orb&&!w.orb.taken)drawPowerOrb(w.orb);
+      for(const e of w.enemies){if(!e.dead)drawMonster(e);}
+      drawArenaDoor(w.arenaDoorX,w.groundY-185);
+    } else {
+      drawArenaWalls();
+      if(w.boss&&!w.boss.dead)drawBoss(w.boss);
+    }
+    for(const p of state.projectiles){ctx.strokeStyle='rgba(130,220,255,.95)';ctx.lineWidth=5;for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(p.x,p.y,p.r+k*10,0,Math.PI*2);ctx.stroke();}}
+    for(const p of state.enemyShots){ctx.strokeStyle=p.source==='small'?'rgba(255,190,90,.88)':'rgba(255,105,190,.9)';ctx.lineWidth=p.source==='small'?4:6;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(p.x,p.y,p.r+7,0,Math.PI*2);ctx.stroke();}
+    for(const p of state.particles){ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle='#bde9ff';ctx.fillRect(p.x,p.y,5,5);ctx.globalAlpha=1;}
+    drawPlayer();
+    ctx.restore();
+    if(state.area==='arena'&&w.boss&&!w.boss.dead){
+      const bw=420,bh=18,x=(W-bw)/2,y=55;ctx.fillStyle='rgba(0,0,0,.55)';roundRect(x-6,y-6,bw+12,bh+12,14,true);ctx.fillStyle='#6a233d';roundRect(x,y,bw,bh,9,true);ctx.fillStyle='#ff69a7';roundRect(x,y,bw*(w.boss.hp/w.boss.maxHp),bh,9,true);ctx.fillStyle='white';ctx.font='800 14px sans-serif';ctx.textAlign='center';ctx.fillText(state.level===10?'IL TUONO ANTICO':`GUARDIANO SONORO ${state.level}`,W/2,y-10);
+    }
+  }
+
+  function drawBackground(){
+    const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#080a12');g.addColorStop(.6,'#14121c');g.addColorStop(1,'#211823');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    const shift=(state.cameraX||0)*.15;
+    for(let i=0;i<18;i++){
+      const x=((i*173-shift)%1500+1500)%1500-100;const h=80+(i*47)%180;
+      ctx.fillStyle=i%2?'#1b1822':'#221d2a';ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+35,h);ctx.lineTo(x+75,0);ctx.fill();
+    }
+    for(let i=0;i<16;i++){const x=((i*211-shift*.7)%1600+1600)%1600;ctx.fillStyle='rgba(120,180,210,.08)';ctx.beginPath();ctx.arc(x,220+(i*57)%300,2+(i%3),0,Math.PI*2);ctx.fill();}
+  }
+
+  function drawArenaBackground(){
+    const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#120711');g.addColorStop(.65,'#2b1224');g.addColorStop(1,'#10080f');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    for(let i=0;i<12;i++){ctx.strokeStyle=`rgba(255,90,180,${.05+(i%3)*.02})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(W/2,H/2,90+i*45,0,Math.PI*2);ctx.stroke();}
+    ctx.fillStyle='rgba(255,255,255,.08)';ctx.font='900 90px sans-serif';ctx.textAlign='center';ctx.fillText('ARENA NWA',W/2,180);
+  }
+  function drawArenaWalls(){
+    ctx.fillStyle='#24131f';ctx.fillRect(0,180,34,430);ctx.fillRect(1246,180,34,430);
+    ctx.strokeStyle='#ff6eb4';ctx.lineWidth=4;ctx.strokeRect(15,195,16,390);ctx.strokeRect(1249,195,16,390);
+  }
+  function drawArenaDoor(x,y){
+    ctx.fillStyle='#2d2333';roundRect(x,y,112,185,12,true);ctx.strokeStyle='#bda7d8';ctx.lineWidth=5;ctx.strokeRect(x,y,112,185);
+    ctx.fillStyle='#f3deff';ctx.font='900 20px sans-serif';ctx.textAlign='center';ctx.fillText('ARENA',x+56,y+82);ctx.font='700 12px sans-serif';ctx.fillText('ENTRA',x+56,y+108);
+    ctx.strokeStyle='rgba(160,220,255,.55)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x+56,y+140,22,0,Math.PI*2);ctx.stroke();
+  }
+
+  function drawPlayer(){
+    const x=player.x,y=player.y;
+    ctx.save();ctx.translate(x+player.w/2,y+player.h/2);ctx.scale(player.dir,1);
+    ctx.fillStyle=state.invuln>0&&Math.floor(state.invuln*12)%2===0?'rgba(255,255,255,.4)':'#d6b27d';ctx.beginPath();ctx.arc(0,-17,12,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#c9a35f';ctx.fillRect(-17,-30,34,7);ctx.fillRect(-10,-38,22,9);
+    ctx.fillStyle='#46596e';roundRect(-15,-6,30,34,6,true);
+    ctx.fillStyle='#6c4b2b';ctx.fillRect(-18,2,7,20);ctx.fillRect(11,2,7,20);
+    ctx.fillStyle='#cfd6df';ctx.fillRect(10,-2,22,7);ctx.fillStyle='#85dcff';ctx.beginPath();ctx.arc(34,1,5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#111';ctx.fillRect(4,-20,3,3);
+    ctx.restore();
+  }
+  function drawPowerOrb(o){
+    const y=o.y+Math.sin(o.bob)*9;
+    ctx.save();ctx.translate(o.x,y);
+    const pulse=1+Math.sin(o.bob*2)*.08;ctx.scale(pulse,pulse);
+    ctx.strokeStyle=o.type==='echo'?'#6ad8ff':o.type==='rapid'?'#ffe06b':'#7fffc8';ctx.lineWidth=5;
+    for(let r=22;r<=38;r+=8){ctx.globalAlpha=.65-(r-22)*.02;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.stroke();}
+    ctx.globalAlpha=1;ctx.fillStyle=o.type==='echo'?'#92e7ff':o.type==='rapid'?'#fff09a':'#a8ffe0';ctx.beginPath();ctx.arc(0,0,15,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#071018';ctx.font='900 16px sans-serif';ctx.textAlign='center';ctx.fillText(o.type==='echo'?'E':o.type==='rapid'?'R':'S',0,6);ctx.restore();
+  }
+  function drawMonster(e){
+    ctx.save();ctx.translate(e.x+e.w/2,e.y+e.h/2+Math.sin(e.phase)*3);
+    ctx.fillStyle='#7b2e61';ctx.beginPath();for(let i=0;i<10;i++){const a=i*Math.PI/5,r=i%2?20:27;ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);}ctx.closePath();ctx.fill();
+    ctx.fillStyle='#ff99cf';ctx.beginPath();ctx.arc(-7,-4,5,0,6.3);ctx.arc(8,-4,5,0,6.3);ctx.fill();ctx.fillStyle='#160b15';ctx.fillRect(-11,10,22,5);
+    ctx.strokeStyle='rgba(255,120,200,.45)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,34+Math.sin(e.phase*2)*4,0,6.3);ctx.stroke();
+    if(e.maxHp>1){ctx.fillStyle='#331729';ctx.fillRect(-22,-34,44,5);ctx.fillStyle='#ff79bd';ctx.fillRect(-22,-34,44*(e.hp/e.maxHp),5);}ctx.restore();
+  }
+  function drawBoss(b){
+    ctx.save();ctx.translate(b.x+b.w/2,b.y+b.h/2);
+    const scale=.78+b.w/520;ctx.scale(scale,scale);
+    ctx.fillStyle='#441629';ctx.beginPath();for(let i=0;i<18;i++){const a=i*Math.PI/9,r=i%2?58:76;ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);}ctx.closePath();ctx.fill();
+    ctx.strokeStyle='rgba(255,85,170,.55)';ctx.lineWidth=6;for(let r=82;r<118;r+=18){ctx.beginPath();ctx.arc(0,0,r+Math.sin(b.phase*4)*4,0,6.3);ctx.stroke();}
+    ctx.fillStyle='#ff96cc';ctx.beginPath();ctx.arc(-24,-17,11,0,6.3);ctx.arc(24,-17,11,0,6.3);ctx.fill();ctx.fillStyle='#09060a';ctx.fillRect(-37,23,74,14);
+    ctx.strokeStyle='#ff96cc';ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(-30,55);ctx.lineTo(-45,77);ctx.moveTo(30,55);ctx.lineTo(45,77);ctx.stroke();
+    ctx.restore();
+  }
+  function roundRect(x,y,w,h,r,fill){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill)ctx.fill();}
+
+  function frame(t){const dt=Math.min(.033,(t-state.lastTime)/1000||0);state.lastTime=t;update(dt);draw();requestAnimationFrame(frame);}
+  window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();keys.add(e.code);if(e.code==='Space')shoot();});
+  window.addEventListener('keyup',e=>keys.delete(e.code));
+  showTitle(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
