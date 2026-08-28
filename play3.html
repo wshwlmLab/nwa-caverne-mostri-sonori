@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>NWA · V4.5 Mobile</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;touch-action:none}
+#game{position:fixed;inset:0;width:100%;height:100%;border:0;background:#05070b}
+#controls{display:none;position:fixed;inset:0;z-index:20;pointer-events:none}
+.b{position:absolute;pointer-events:auto;width:78px;height:78px;border-radius:24px;border:2px solid rgba(255,255,255,.25);background:rgba(5,10,18,.28);color:#fff;font:900 34px system-ui;display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.18);touch-action:none;-webkit-tap-highlight-color:transparent;opacity:.48;transition:opacity .18s,transform .1s,background .18s,border-color .18s,box-shadow .18s}
+.b.on,.b:active{transform:scale(.94);opacity:.8;background:rgba(90,205,255,.34)}
+#controls.started .b{opacity:0;background:transparent;border-color:transparent;box-shadow:none}
+#controls.started .b.on,#controls.started .b:active{opacity:.28;background:rgba(90,205,255,.22);border-color:rgba(255,255,255,.15)}
+#l{left:max(18px,env(safe-area-inset-left));bottom:max(18px,env(safe-area-inset-bottom))}
+#r{left:max(106px,calc(env(safe-area-inset-left) + 106px));bottom:max(18px,env(safe-area-inset-bottom))}
+#j{left:max(194px,calc(env(safe-area-inset-left) + 194px));bottom:max(18px,env(safe-area-inset-bottom));font-size:15px}
+#f{right:max(20px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));width:90px;height:90px;border-radius:50%;font-size:30px;background:rgba(35,135,200,.36)}
+#rotate{display:none;position:fixed;top:max(72px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:30;pointer-events:none;padding:12px 18px;border-radius:18px;background:rgba(5,9,16,.94);border:1px solid rgba(255,255,255,.25);color:#fff;font:900 16px system-ui;white-space:nowrap;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+#powerBadge{position:fixed;top:max(68px,env(safe-area-inset-top));left:50%;transform:translate(-50%,-12px) scale(.94);z-index:31;display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:rgba(8,12,20,.94);border:1px solid rgba(170,225,255,.45);box-shadow:0 10px 32px rgba(0,0,0,.35),0 0 24px rgba(100,210,255,.12);color:#fff;font:900 15px system-ui;letter-spacing:.02em;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}
+#powerBadge.show{opacity:1;transform:translate(-50%,0) scale(1)}
+#powerIcon{font-size:24px;line-height:1}
+#powerName{white-space:nowrap}
+@media(pointer:coarse){#controls{display:block}}
+@media(pointer:coarse) and (orientation:portrait){#rotate{display:block}#controls{opacity:.3}}
+</style>
+</head>
+<body>
+<iframe id="game" title="NWA Le Caverne dei Mostri Sonori"></iframe>
+<div id="controls">
+<button class="b" id="l">◀</button>
+<button class="b" id="r">▶</button>
+<button class="b" id="j">SALTA</button>
+<button class="b" id="f">◎</button>
+</div>
+<div id="rotate">↻ &nbsp; RUOTA IL TELEFONO</div>
+<div id="powerBadge"><span id="powerIcon">⚡</span><span id="powerName">POTERE</span></div>
+<script>
+const frame=document.getElementById('game');
+const controls=document.getElementById('controls');
+const badge=document.getElementById('powerBadge');
+const badgeIcon=document.getElementById('powerIcon');
+const badgeName=document.getElementById('powerName');
+let badgeTimer=null;
+let started=false;
+
+function startPlay(){
+  if(started) return;
+  started=true;
+  controls.classList.add('started');
+}
+
+function showPowerBadge(text){
+  const m=text.match(/POTERE:\s*([^\s]+)\s*([^!]+)!/i);
+  badgeIcon.textContent=m?m[1]:'⚡';
+  badgeName.textContent=m?m[2].trim():'POTERE ATTIVO';
+  badge.classList.add('show');
+  clearTimeout(badgeTimer);
+  badgeTimer=setTimeout(()=>badge.classList.remove('show'),2200);
+}
+
+async function boot(){
+  let s=await fetch('index.html?v=45',{cache:'no-store'}).then(r=>r.text());
+
+  // Palline nemiche molto leggibili
+  s=s.replace('r:7,life:4','r:22,life:4')
+     .replace('r:12,life:5','r:30,life:5')
+     .replace("ctx.lineWidth=p.source==='boss'?6:4","ctx.lineWidth=p.source==='boss'?10:8")
+     .replace("ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.stroke()",
+              "ctx.save();ctx.shadowColor=m.shot;ctx.shadowBlur=p.source==='boss'?24:18;ctx.globalAlpha=.34;ctx.fillStyle=m.shot;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle='#ffffff';ctx.lineWidth=p.source==='boss'?5:4;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=m.shot;ctx.lineWidth=p.source==='boss'?10:8;ctx.beginPath();ctx.arc(p.x,p.y,p.r+5,0,Math.PI*2);ctx.stroke();ctx.restore()")
+     .replace("speed=state.power==='wind'?350:260","speed=state.power==='wind'?410:315")
+     .replace('#touchGuide,#touchFeedback { display:block; }','#touchGuide,#touchFeedback { display:none!important; }');
+
+  frame.srcdoc=s;
+
+  frame.addEventListener('load',()=>{
+    const d=frame.contentDocument;
+    const toast=d&&d.getElementById('toast');
+    if(!toast) return;
+    const obs=new MutationObserver(()=>{
+      const txt=(toast.textContent||'').trim();
+      if(txt.startsWith('POTERE:')){
+        showPowerBadge(txt);
+        toast.style.visibility='hidden';
+      }else{
+        toast.style.visibility='';
+      }
+    });
+    obs.observe(toast,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class']});
+  },{once:true});
+}
+boot();
+
+function win(){return frame.contentWindow}
+function kd(code){win()?.dispatchEvent(new KeyboardEvent('keydown',{code,bubbles:true,cancelable:true}))}
+function ku(code){win()?.dispatchEvent(new KeyboardEvent('keyup',{code,bubbles:true,cancelable:true}))}
+function bindHold(id,code){
+  const b=document.getElementById(id);
+  const down=e=>{e.preventDefault();e.stopPropagation();startPlay();kd(code);b.classList.add('on')};
+  const up=e=>{e.preventDefault();e.stopPropagation();ku(code);b.classList.remove('on')};
+  b.addEventListener('pointerdown',down,{passive:false});
+  ['pointerup','pointercancel','pointerleave'].forEach(x=>b.addEventListener(x,up,{passive:false}));
+}
+bindHold('l','ArrowLeft');
+bindHold('r','ArrowRight');
+
+const j=document.getElementById('j');
+j.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();startPlay();kd('ArrowUp');j.classList.add('on');setTimeout(()=>ku('ArrowUp'),80)},{passive:false});
+['pointerup','pointercancel','pointerleave'].forEach(x=>j.addEventListener(x,e=>{e.preventDefault();ku('ArrowUp');j.classList.remove('on')},{passive:false}));
+
+const f=document.getElementById('f');
+let timer=null;
+function stop(){if(timer){clearInterval(timer);timer=null}ku('Space');f.classList.remove('on')}
+f.addEventListener('pointerdown',e=>{
+  e.preventDefault();e.stopPropagation();startPlay();kd('Space');ku('Space');f.classList.add('on');
+  timer=setInterval(()=>{kd('Space');ku('Space')},115)
+},{passive:false});
+['pointerup','pointercancel','pointerleave'].forEach(x=>f.addEventListener(x,e=>{e.preventDefault();stop()},{passive:false}));
+</script>
+</body>
+</html>
