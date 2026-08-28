@@ -60,14 +60,17 @@ function showPowerBadge(text){
 }
 
 async function boot(){
-  let s=await fetch('index.html?v=451',{cache:'no-store'}).then(r=>r.text());
+  let s=await fetch('index.html?v=452',{cache:'no-store'}).then(r=>r.text());
   s=s.replace('r:7,life:4','r:22,life:4')
      .replace('r:12,life:5','r:30,life:5')
      .replace("ctx.lineWidth=p.source==='boss'?6:4","ctx.lineWidth=p.source==='boss'?10:8")
      .replace("ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.stroke()",
               "ctx.save();ctx.shadowColor=m.shot;ctx.shadowBlur=p.source==='boss'?24:18;ctx.globalAlpha=.34;ctx.fillStyle=m.shot;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle='#ffffff';ctx.lineWidth=p.source==='boss'?5:4;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=m.shot;ctx.lineWidth=p.source==='boss'?10:8;ctx.beginPath();ctx.arc(p.x,p.y,p.r+5,0,Math.PI*2);ctx.stroke();ctx.restore()")
      .replace("speed=state.power==='wind'?350:260","speed=state.power==='wind'?410:315")
-     .replace('#touchGuide,#touchFeedback { display:block; }','#touchGuide,#touchFeedback { display:none!important; }');
+     .replace('#touchGuide,#touchFeedback { display:block; }','#touchGuide,#touchFeedback { display:none!important; }')
+     .replace('#toast.show { opacity:1; }','#toast.show { opacity:1; } #toast.levelIntro { top:max(62px,env(safe-area-inset-top));bottom:auto; }')
+     .replace("let toastTimer;function showToast(msg,ms=1700){toast.textContent=msg;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),ms);}","let toastTimer;function showToast(msg,ms=1700){toast.textContent=msg;toast.classList.toggle('levelIntro',String(msg).startsWith('Livello '));toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.classList.remove('show');toast.classList.remove('levelIntro')},ms);}")
+     .replace("const t=state.world.theme;showToast(`Livello ${n}: ${t.name} · profondità ${t.depth}`,2700);","const t=state.world.theme;window.__nwaShownLevels=window.__nwaShownLevels||new Set();if(!window.__nwaShownLevels.has(n)){window.__nwaShownLevels.add(n);showToast(`Livello ${n}: ${t.name} · profondità ${t.depth}`,2200);}");
 
   frame.srcdoc=s;
   frame.addEventListener('load',()=>{
