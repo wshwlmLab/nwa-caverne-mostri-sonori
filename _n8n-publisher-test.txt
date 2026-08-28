@@ -1,0 +1,2 @@
+NWA publisher end-to-end test — 2026-08-28
+Temporary file created only to verify ChatGPT → n8n → GitHub write access.
