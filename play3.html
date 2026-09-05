@@ -71,6 +71,8 @@ async function boot(){
               "ctx.save();ctx.shadowColor=m.shot;ctx.shadowBlur=p.source==='boss'?24:18;ctx.globalAlpha=.34;ctx.fillStyle=m.shot;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle='#ffffff';ctx.lineWidth=p.source==='boss'?5:4;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=m.shot;ctx.lineWidth=p.source==='boss'?10:8;ctx.beginPath();ctx.arc(p.x,p.y,p.r+5,0,Math.PI*2);ctx.stroke();ctx.restore()")
      .replace("speed=state.power==='wind'?350:260","speed=state.power==='wind'?410:315")
      .split('player.vy=-555').join('player.vy=-700')
+     .replace("let audioCtx=null;function ensureAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();}","let audioCtx=null,audioUnlocked=false;function ensureAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();if(!audioUnlocked){const buffer=audioCtx.createBuffer(1,1,22050),source=audioCtx.createBufferSource();source.buffer=buffer;source.connect(audioCtx.destination);source.start(0);audioUnlocked=true;}}")
+     .replace("g.gain.setValueAtTime(gain,audioCtx.currentTime)","g.gain.setValueAtTime(Math.min(1,gain*2.6),audioCtx.currentTime)")
      .replace('#touchGuide,#touchFeedback { display:block; }','#touchGuide,#touchFeedback { display:none!important; }')
      .replace('#toast.show { opacity:1; }','#toast.show { opacity:1; } #toast { top:max(62px,env(safe-area-inset-top));bottom:auto; }')
      .replace("let toastTimer;function showToast(msg,ms=1700){toast.textContent=msg;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),ms);}","let toastTimer;function showToast(msg,ms=1700){toast.textContent=msg;toast.classList.toggle('levelIntro',String(msg).startsWith('Livello '));toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.classList.remove('show');toast.classList.remove('levelIntro')},ms);}")
@@ -110,6 +112,12 @@ async function boot(){
     d.addEventListener('pointermove',onTouchMove,{capture:true,passive:false});
     d.addEventListener('pointerup',onTouchEnd,{capture:true,passive:false});
     d.addEventListener('pointercancel',e=>gestures.delete(e.pointerId),{capture:true});
+    const overlay=d.getElementById('overlay');
+    const blockNativeTouch=e=>{
+      if(!overlay?.classList.contains('hidden')) return;
+      e.preventDefault();e.stopImmediatePropagation();
+    };
+    ['touchstart','touchmove','touchend','touchcancel','gesturestart','gesturechange','gestureend','dblclick'].forEach(type=>d.addEventListener(type,blockNativeTouch,{capture:true,passive:false}));
     const obs=new MutationObserver(()=>{
       const txt=(toast.textContent||'').trim();
       if(txt.startsWith('POTERE:')){
