@@ -9,13 +9,11 @@
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;touch-action:none}
 #game{position:fixed;inset:0;width:100%;height:100%;border:0;background:#05070b}
 #controls{display:none;position:fixed;inset:0;z-index:20;pointer-events:none}
-.b{position:absolute;pointer-events:auto;width:78px;height:78px;border-radius:24px;border:2px solid rgba(255,255,255,.25);background:rgba(5,10,18,.28);color:#fff;font:900 34px system-ui;display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.18);touch-action:none;-webkit-tap-highlight-color:transparent;opacity:.48;transition:opacity .18s,transform .1s,background .18s,border-color .18s,box-shadow .18s}
+.b{position:absolute;pointer-events:auto;width:58px;height:58px;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:rgba(5,10,18,.22);color:#fff;font:900 28px system-ui;display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.14);touch-action:none;-webkit-tap-highlight-color:transparent;opacity:.38;transition:opacity .18s,transform .1s,background .18s,border-color .18s,box-shadow .18s}
 .b.on,.b:active{transform:scale(.94);opacity:.8;background:rgba(90,205,255,.34)}
 #controls.started .b,#controls.started .b.on,#controls.started .b:active{opacity:0!important;background:transparent!important;border-color:transparent!important;box-shadow:none!important;color:transparent!important}
-#l{left:max(18px,env(safe-area-inset-left));bottom:max(18px,env(safe-area-inset-bottom))}
-#r{left:max(106px,calc(env(safe-area-inset-left) + 106px));bottom:max(18px,env(safe-area-inset-bottom))}
-#j{left:max(194px,calc(env(safe-area-inset-left) + 194px));bottom:max(18px,env(safe-area-inset-bottom));font-size:15px}
-#f{right:max(20px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));width:90px;height:90px;border-radius:50%;font-size:30px;background:rgba(35,135,200,.36)}
+#l{left:max(16px,env(safe-area-inset-left));bottom:max(48px,calc(env(safe-area-inset-bottom) + 30px))}
+#r{left:max(82px,calc(env(safe-area-inset-left) + 66px));bottom:max(48px,calc(env(safe-area-inset-bottom) + 30px))}
 #rotate{display:none;position:fixed;top:max(72px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:30;pointer-events:none;padding:12px 18px;border-radius:18px;background:rgba(5,9,16,.94);border:1px solid rgba(255,255,255,.25);color:#fff;font:900 16px system-ui;white-space:nowrap;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 #powerBadge{position:fixed;top:max(68px,env(safe-area-inset-top));left:50%;transform:translate(-50%,-12px) scale(.94);z-index:31;display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:rgba(8,12,20,.94);border:1px solid rgba(170,225,255,.45);box-shadow:0 10px 32px rgba(0,0,0,.35),0 0 24px rgba(100,210,255,.12);color:#fff;font:900 15px system-ui;letter-spacing:.02em;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}
 #powerBadge.show{opacity:1;transform:translate(-50%,0) scale(1)}
@@ -28,10 +26,8 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;tou
 <body>
 <iframe id="game" title="NWA Le Caverne dei Mostri Sonori"></iframe>
 <div id="controls">
-<button class="b" id="l">◀</button>
-<button class="b" id="r">▶</button>
-<button class="b" id="j">SALTA</button>
-<button class="b" id="f">◎</button>
+<button class="b" id="l" aria-label="Sinistra">←</button>
+<button class="b" id="r" aria-label="Destra">→</button>
 </div>
 <div id="rotate">↻ &nbsp; RUOTA IL TELEFONO</div>
 <div id="powerBadge"><span id="powerIcon">⚡</span><span id="powerName">POTERE</span></div>
@@ -68,7 +64,7 @@ async function boot(){
               "ctx.save();ctx.shadowColor=m.shot;ctx.shadowBlur=p.source==='boss'?24:18;ctx.globalAlpha=.34;ctx.fillStyle=m.shot;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle='#ffffff';ctx.lineWidth=p.source==='boss'?5:4;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=m.shot;ctx.lineWidth=p.source==='boss'?10:8;ctx.beginPath();ctx.arc(p.x,p.y,p.r+5,0,Math.PI*2);ctx.stroke();ctx.restore()")
      .replace("speed=state.power==='wind'?350:260","speed=state.power==='wind'?410:315")
      .replace('#touchGuide,#touchFeedback { display:block; }','#touchGuide,#touchFeedback { display:none!important; }')
-     .replace('#toast.show { opacity:1; }','#toast.show { opacity:1; } #toast.levelIntro { top:max(62px,env(safe-area-inset-top));bottom:auto; }')
+     .replace('#toast.show { opacity:1; }','#toast.show { opacity:1; } #toast { top:max(62px,env(safe-area-inset-top));bottom:auto; }')
      .replace("let toastTimer;function showToast(msg,ms=1700){toast.textContent=msg;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),ms);}","let toastTimer;function showToast(msg,ms=1700){toast.textContent=msg;toast.classList.toggle('levelIntro',String(msg).startsWith('Livello '));toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.classList.remove('show');toast.classList.remove('levelIntro')},ms);}")
      .replace("const t=state.world.theme;showToast(`Livello ${n}: ${t.name} · profondità ${t.depth}`,2700);","const t=state.world.theme;window.__nwaShownLevels=window.__nwaShownLevels||new Set();if(!window.__nwaShownLevels.has(n)){window.__nwaShownLevels.add(n);showToast(`Livello ${n}: ${t.name} · profondità ${t.depth}`,2200);}");
 
@@ -77,6 +73,34 @@ async function boot(){
     const d=frame.contentDocument;
     const toast=d&&d.getElementById('toast');
     if(!toast) return;
+    const gestures=new Map();
+    const onTouchDown=e=>{
+      const overlay=d.getElementById('overlay');
+      if(e.pointerType!=='touch'||!overlay?.classList.contains('hidden')) return;
+      e.preventDefault();e.stopImmediatePropagation();
+      gestures.set(e.pointerId,{x:e.clientX,y:e.clientY,jumped:false});
+    };
+    const onTouchMove=e=>{
+      const g=gestures.get(e.pointerId);
+      if(!g) return;
+      e.preventDefault();e.stopImmediatePropagation();
+      const dx=e.clientX-g.x,dy=e.clientY-g.y;
+      if(!g.jumped&&dy<-42&&Math.abs(dy)>Math.abs(dx)*.72){
+        g.jumped=true;kd('ArrowUp');setTimeout(()=>ku('ArrowUp'),80);
+      }
+    };
+    const onTouchEnd=e=>{
+      const g=gestures.get(e.pointerId);
+      if(!g) return;
+      e.preventDefault();e.stopImmediatePropagation();
+      const dx=e.clientX-g.x,dy=e.clientY-g.y;
+      if(!g.jumped&&Math.hypot(dx,dy)<18){kd('Space');ku('Space')}
+      gestures.delete(e.pointerId);
+    };
+    d.addEventListener('pointerdown',onTouchDown,{capture:true,passive:false});
+    d.addEventListener('pointermove',onTouchMove,{capture:true,passive:false});
+    d.addEventListener('pointerup',onTouchEnd,{capture:true,passive:false});
+    d.addEventListener('pointercancel',e=>gestures.delete(e.pointerId),{capture:true});
     const obs=new MutationObserver(()=>{
       const txt=(toast.textContent||'').trim();
       if(txt.startsWith('POTERE:')){
@@ -103,19 +127,6 @@ function bindHold(id,code){
 }
 bindHold('l','ArrowLeft');
 bindHold('r','ArrowRight');
-
-const j=document.getElementById('j');
-j.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();kd('ArrowUp');j.classList.add('on');setTimeout(()=>ku('ArrowUp'),80)},{passive:false});
-['pointerup','pointercancel','pointerleave'].forEach(x=>j.addEventListener(x,e=>{e.preventDefault();ku('ArrowUp');j.classList.remove('on')},{passive:false}));
-
-const f=document.getElementById('f');
-let timer=null;
-function stop(){if(timer){clearInterval(timer);timer=null}ku('Space');f.classList.remove('on')}
-f.addEventListener('pointerdown',e=>{
-  e.preventDefault();e.stopPropagation();kd('Space');ku('Space');f.classList.add('on');
-  timer=setInterval(()=>{kd('Space');ku('Space')},115)
-},{passive:false});
-['pointerup','pointercancel','pointerleave'].forEach(x=>f.addEventListener(x,e=>{e.preventDefault();stop()},{passive:false}));
 </script>
 </body>
 </html>
