@@ -6,13 +6,13 @@
 <title>NWA · V4.5 Mobile</title>
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;touch-action:none}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
 #game{position:fixed;inset:0;width:100%;height:100%;border:0;background:#05070b}
 #controls{display:none;position:fixed;inset:0;z-index:20;pointer-events:none}
-.b{position:absolute;pointer-events:auto;width:82px;height:82px;border-radius:25px;border:1px solid rgba(255,255,255,.22);background:rgba(5,10,18,.22);color:#fff;font:900 38px system-ui;display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.14);touch-action:none;-webkit-tap-highlight-color:transparent;opacity:.38;transition:opacity .18s,transform .1s,background .18s,border-color .18s,box-shadow .18s}
+.b{position:absolute;pointer-events:auto;width:82px;height:82px;border-radius:25px;border:1px solid rgba(255,255,255,.22);background:rgba(5,10,18,.22);color:#fff;font:900 38px system-ui;display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.14);touch-action:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;opacity:.38;transition:opacity .18s,transform .1s,background .18s,border-color .18s,box-shadow .18s}
 .b.on,.b:active{transform:scale(.94);opacity:.8;background:rgba(90,205,255,.34)}
-#l{left:max(16px,env(safe-area-inset-left))!important;right:auto!important;top:max(72px,calc(env(safe-area-inset-top) + 54px))!important;bottom:auto!important}
-#r{right:max(16px,env(safe-area-inset-right))!important;left:auto!important;top:max(72px,calc(env(safe-area-inset-top) + 54px))!important;bottom:auto!important}
+#l{left:max(34px,calc(env(safe-area-inset-left) + 18px))!important;right:auto!important;top:max(72px,calc(env(safe-area-inset-top) + 54px))!important;bottom:auto!important}
+#r{right:max(34px,calc(env(safe-area-inset-right) + 18px))!important;left:auto!important;top:max(72px,calc(env(safe-area-inset-top) + 54px))!important;bottom:auto!important}
 #rotate{display:none;position:fixed!important;inset:0!important;width:100vw;height:100dvh;min-height:100vh;z-index:40;pointer-events:auto;align-items:center;justify-content:center;padding:28px;background:radial-gradient(circle at 50% 35%,rgba(24,51,74,.98),rgba(5,9,16,.99) 72%);color:#fff;text-align:center;font-family:system-ui;transform:none!important}
 #rotateCard{width:min(520px,92vw);padding:34px 24px;border-radius:28px;background:rgba(8,14,24,.96);border:2px solid rgba(170,225,255,.48);box-shadow:0 18px 60px rgba(0,0,0,.52),0 0 42px rgba(100,210,255,.14)}
 #rotateIcon{display:block;font-size:72px;line-height:1;margin-bottom:18px}
@@ -27,7 +27,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;tou
 </style>
 </head>
 <body>
-<iframe id="game" title="NWA Le Caverne dei Mostri Sonori"></iframe>
+<iframe id="game" title="NWA Le Caverne dei Mostri Sonori" allow="autoplay"></iframe>
 <div id="controls">
 <button class="b" id="l" aria-label="Sinistra">←</button>
 <button class="b" id="r" aria-label="Destra">→</button>
@@ -70,6 +70,7 @@ async function boot(){
      .replace("ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.stroke()",
               "ctx.save();ctx.shadowColor=m.shot;ctx.shadowBlur=p.source==='boss'?24:18;ctx.globalAlpha=.34;ctx.fillStyle=m.shot;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle='#ffffff';ctx.lineWidth=p.source==='boss'?5:4;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=m.shot;ctx.lineWidth=p.source==='boss'?10:8;ctx.beginPath();ctx.arc(p.x,p.y,p.r+5,0,Math.PI*2);ctx.stroke();ctx.restore()")
      .replace("speed=state.power==='wind'?350:260","speed=state.power==='wind'?410:315")
+     .split('player.vy=-555').join('player.vy=-700')
      .replace('#touchGuide,#touchFeedback { display:block; }','#touchGuide,#touchFeedback { display:none!important; }')
      .replace('#toast.show { opacity:1; }','#toast.show { opacity:1; } #toast { top:max(62px,env(safe-area-inset-top));bottom:auto; }')
      .replace("let toastTimer;function showToast(msg,ms=1700){toast.textContent=msg;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),ms);}","let toastTimer;function showToast(msg,ms=1700){toast.textContent=msg;toast.classList.toggle('levelIntro',String(msg).startsWith('Livello '));toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.classList.remove('show');toast.classList.remove('levelIntro')},ms);}")
@@ -85,6 +86,7 @@ async function boot(){
       const overlay=d.getElementById('overlay');
       if(e.pointerType!=='touch'||!overlay?.classList.contains('hidden')) return;
       e.preventDefault();e.stopImmediatePropagation();
+      try{frame.contentWindow.ensureAudio?.()}catch{}
       gestures.set(e.pointerId,{x:e.clientX,y:e.clientY,jumped:false});
     };
     const onTouchMove=e=>{
@@ -123,14 +125,16 @@ async function boot(){
 boot();
 
 function win(){return frame.contentWindow}
+function unlockAudio(){try{win()?.ensureAudio?.()}catch{}}
 function kd(code){win()?.dispatchEvent(new KeyboardEvent('keydown',{code,bubbles:true,cancelable:true}))}
 function ku(code){win()?.dispatchEvent(new KeyboardEvent('keyup',{code,bubbles:true,cancelable:true}))}
 function bindHold(id,code){
   const b=document.getElementById(id);
-  const down=e=>{e.preventDefault();e.stopPropagation();kd(code);b.classList.add('on')};
+  const down=e=>{e.preventDefault();e.stopPropagation();unlockAudio();kd(code);b.classList.add('on')};
   const up=e=>{e.preventDefault();e.stopPropagation();ku(code);b.classList.remove('on')};
   b.addEventListener('pointerdown',down,{passive:false});
   ['pointerup','pointercancel','pointerleave'].forEach(x=>b.addEventListener(x,up,{passive:false}));
+  ['contextmenu','selectstart','dragstart'].forEach(x=>b.addEventListener(x,e=>e.preventDefault()));
 }
 bindHold('l','ArrowLeft');
 bindHold('r','ArrowRight');
