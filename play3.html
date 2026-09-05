@@ -92,8 +92,8 @@ async function boot(){
       if(!g) return;
       e.preventDefault();e.stopImmediatePropagation();
       const dx=e.clientX-g.x,dy=e.clientY-g.y;
-      if(!g.jumped&&dy<-42&&Math.abs(dy)>Math.abs(dx)*.72){
-        g.jumped=true;kd('ArrowUp');setTimeout(()=>ku('ArrowUp'),80);
+      if(!g.jumped&&dy<-22&&Math.abs(dy)>Math.abs(dx)*.5){
+        g.jumped=true;kd('ArrowUp');setTimeout(()=>ku('ArrowUp'),120);
       }
     };
     const onTouchEnd=e=>{
