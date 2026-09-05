@@ -12,9 +12,9 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;tou
 .b{position:absolute;pointer-events:auto;width:58px;height:58px;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:rgba(5,10,18,.22);color:#fff;font:900 28px system-ui;display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.14);touch-action:none;-webkit-tap-highlight-color:transparent;opacity:.38;transition:opacity .18s,transform .1s,background .18s,border-color .18s,box-shadow .18s}
 .b.on,.b:active{transform:scale(.94);opacity:.8;background:rgba(90,205,255,.34)}
 #controls.started .b,#controls.started .b.on,#controls.started .b:active{opacity:0!important;background:transparent!important;border-color:transparent!important;box-shadow:none!important;color:transparent!important}
-#l{left:max(16px,env(safe-area-inset-left));top:max(72px,calc(env(safe-area-inset-top) + 54px))}
-#r{right:max(16px,env(safe-area-inset-right));top:max(72px,calc(env(safe-area-inset-top) + 54px))}
-#rotate{display:none;position:fixed;inset:0;z-index:40;pointer-events:auto;align-items:center;justify-content:center;padding:28px;background:radial-gradient(circle at 50% 35%,rgba(24,51,74,.98),rgba(5,9,16,.99) 72%);color:#fff;text-align:center;font-family:system-ui}
+#l{left:max(16px,env(safe-area-inset-left))!important;right:auto!important;top:max(72px,calc(env(safe-area-inset-top) + 54px))!important;bottom:auto!important}
+#r{right:max(16px,env(safe-area-inset-right))!important;left:auto!important;top:max(72px,calc(env(safe-area-inset-top) + 54px))!important;bottom:auto!important}
+#rotate{display:none;position:fixed!important;inset:0!important;width:100vw;height:100dvh;min-height:100vh;z-index:40;pointer-events:auto;align-items:center;justify-content:center;padding:28px;background:radial-gradient(circle at 50% 35%,rgba(24,51,74,.98),rgba(5,9,16,.99) 72%);color:#fff;text-align:center;font-family:system-ui;transform:none!important}
 #rotateCard{width:min(520px,92vw);padding:34px 24px;border-radius:28px;background:rgba(8,14,24,.96);border:2px solid rgba(170,225,255,.48);box-shadow:0 18px 60px rgba(0,0,0,.52),0 0 42px rgba(100,210,255,.14)}
 #rotateIcon{display:block;font-size:72px;line-height:1;margin-bottom:18px}
 #rotate strong{display:block;font-size:clamp(27px,8vw,42px);line-height:1.05}
@@ -38,11 +38,22 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;tou
 <script>
 const frame=document.getElementById('game');
 const controls=document.getElementById('controls');
+const rotate=document.getElementById('rotate');
 const badge=document.getElementById('powerBadge');
 const badgeIcon=document.getElementById('powerIcon');
 const badgeName=document.getElementById('powerName');
 let badgeTimer=null;
 let started=false;
+
+function syncOrientation(){
+  const portrait=window.innerHeight>window.innerWidth;
+  rotate.style.setProperty('display',portrait?'flex':'none','important');
+  if(portrait) controls.style.setProperty('display','none','important');
+  else controls.style.removeProperty('display');
+}
+syncOrientation();
+window.addEventListener('resize',syncOrientation,{passive:true});
+window.addEventListener('orientationchange',()=>setTimeout(syncOrientation,100),{passive:true});
 
 function startPlay(){
   if(started) return;
