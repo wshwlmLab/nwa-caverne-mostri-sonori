@@ -42,6 +42,26 @@ const badge=document.getElementById('powerBadge');
 const badgeIcon=document.getElementById('powerIcon');
 const badgeName=document.getElementById('powerName');
 let badgeTimer=null;
+let nwaAudioCtx=null,nwaAudioUnlocked=false;
+
+function nwaUnlockAudio(){
+  if(!nwaAudioCtx) nwaAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(nwaAudioCtx.state==='suspended') nwaAudioCtx.resume();
+  if(!nwaAudioUnlocked){
+    const buffer=nwaAudioCtx.createBuffer(1,1,22050),source=nwaAudioCtx.createBufferSource();
+    source.buffer=buffer;source.connect(nwaAudioCtx.destination);source.start(0);nwaAudioUnlocked=true;
+  }
+}
+function nwaTone(f=440,d=.09,type='sine',gain=.05,slide=0){
+  nwaUnlockAudio();
+  const o=nwaAudioCtx.createOscillator(),g=nwaAudioCtx.createGain(),now=nwaAudioCtx.currentTime;
+  o.type=type;o.frequency.setValueAtTime(f,now);
+  if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(40,f+slide),now+d);
+  g.gain.setValueAtTime(Math.min(1,gain*2.6),now);g.gain.exponentialRampToValueAtTime(.0001,now+d);
+  o.connect(g).connect(nwaAudioCtx.destination);o.start(now);o.stop(now+d);
+}
+window.nwaUnlockAudio=nwaUnlockAudio;
+window.nwaTone=nwaTone;
 
 function syncOrientation(){
   const portrait=window.innerHeight>window.innerWidth;
@@ -71,12 +91,17 @@ async function boot(){
               "ctx.save();ctx.shadowColor=m.shot;ctx.shadowBlur=p.source==='boss'?24:18;ctx.globalAlpha=.34;ctx.fillStyle=m.shot;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle='#ffffff';ctx.lineWidth=p.source==='boss'?5:4;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=m.shot;ctx.lineWidth=p.source==='boss'?10:8;ctx.beginPath();ctx.arc(p.x,p.y,p.r+5,0,Math.PI*2);ctx.stroke();ctx.restore()")
      .replace("speed=state.power==='wind'?350:260","speed=state.power==='wind'?410:315")
      .split('player.vy=-555').join('player.vy=-700')
-     .replace("let audioCtx=null;function ensureAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();}","let audioCtx=null,audioUnlocked=false;function ensureAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();if(!audioUnlocked){const buffer=audioCtx.createBuffer(1,1,22050),source=audioCtx.createBufferSource();source.buffer=buffer;source.connect(audioCtx.destination);source.start(0);audioUnlocked=true;}}")
-     .replace("g.gain.setValueAtTime(gain,audioCtx.currentTime)","g.gain.setValueAtTime(Math.min(1,gain*2.6),audioCtx.currentTime)")
+     .replace("let audioCtx=null;function ensureAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();}","let audioCtx=null;function ensureAudio(){parent.nwaUnlockAudio?.()}")
+     .replace("function tone(f=440,d=.09,type='sine',gain=.05,slide=0){ensureAudio();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.setValueAtTime(f,audioCtx.currentTime);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(40,f+slide),audioCtx.currentTime+d);g.gain.setValueAtTime(gain,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+d);o.connect(g).connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d);}","function tone(f=440,d=.09,type='sine',gain=.05,slide=0){parent.nwaTone?.(f,d,type,gain,slide)}")
+     .replace("{q:'Quanto fa 18 + 7?',a:['24','25','26'],ok:1}","{q:'Quanto fa 147 + 86?',a:['223','233','243'],ok:1}")
+     .replace("{q:'Quanto fa 6 × 4?',a:['20','24','28'],ok:1}","{q:'Quanto fa 14 × 6?',a:['74','84','94'],ok:1}")
+     .replace("if(level<=1){const a=10+Math.floor(Math.random()*30),b=3+Math.floor(Math.random()*18)","if(level<=1){const a=100+Math.floor(Math.random()*400),b=20+Math.floor(Math.random()*80)")
      .replace('#touchGuide,#touchFeedback { display:block; }','#touchGuide,#touchFeedback { display:none!important; }')
      .replace('#toast.show { opacity:1; }','#toast.show { opacity:1; } #toast { top:max(62px,env(safe-area-inset-top));bottom:auto; }')
      .replace("let toastTimer;function showToast(msg,ms=1700){toast.textContent=msg;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),ms);}","let toastTimer;function showToast(msg,ms=1700){toast.textContent=msg;toast.classList.toggle('levelIntro',String(msg).startsWith('Livello '));toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.classList.remove('show');toast.classList.remove('levelIntro')},ms);}")
      .replace("const t=state.world.theme;showToast(`Livello ${n}: ${t.name} · profondità ${t.depth}`,2700);","const t=state.world.theme;window.__nwaShownLevels=window.__nwaShownLevels||new Set();if(!window.__nwaShownLevels.has(n)){window.__nwaShownLevels.add(n);showToast(`Livello ${n}: ${t.name} · profondità ${t.depth}`,2200);}");
+
+  s=s.replace("const ans=document.getElementById('answers');r.a.forEach((txt,i)=>{const b=document.createElement('button');b.className='answer';b.textContent=`${i+1}. ${txt}`;b.onclick=()=>answerPuzzle(i);ans.appendChild(b);});","const ans=document.getElementById('answers'),numeric=r.a.every(txt=>/^-?\\d/.test(String(txt).trim())),labels=numeric?['A','B','C','D']:['1','2','3','4'];r.a.forEach((txt,i)=>{const b=document.createElement('button');b.className='answer';b.textContent=`${labels[i]}. ${txt}`;b.onclick=()=>answerPuzzle(i);ans.appendChild(b);});");
 
   frame.srcdoc=s;
   frame.addEventListener('load',()=>{
@@ -88,7 +113,7 @@ async function boot(){
       const overlay=d.getElementById('overlay');
       if(e.pointerType!=='touch'||!overlay?.classList.contains('hidden')) return;
       e.preventDefault();e.stopImmediatePropagation();
-      try{frame.contentWindow.ensureAudio?.()}catch{}
+      try{nwaUnlockAudio()}catch{}
       gestures.set(e.pointerId,{x:e.clientX,y:e.clientY,jumped:false});
     };
     const onTouchMove=e=>{
@@ -133,7 +158,7 @@ async function boot(){
 boot();
 
 function win(){return frame.contentWindow}
-function unlockAudio(){try{win()?.ensureAudio?.()}catch{}}
+function unlockAudio(){try{nwaUnlockAudio()}catch{}}
 function kd(code){win()?.dispatchEvent(new KeyboardEvent('keydown',{code,bubbles:true,cancelable:true}))}
 function ku(code){win()?.dispatchEvent(new KeyboardEvent('keyup',{code,bubbles:true,cancelable:true}))}
 function bindHold(id,code){
