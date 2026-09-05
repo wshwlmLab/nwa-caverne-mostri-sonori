@@ -9,9 +9,8 @@
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;touch-action:none}
 #game{position:fixed;inset:0;width:100%;height:100%;border:0;background:#05070b}
 #controls{display:none;position:fixed;inset:0;z-index:20;pointer-events:none}
-.b{position:absolute;pointer-events:auto;width:58px;height:58px;border-radius:18px;border:1px solid rgba(255,255,255,.22);background:rgba(5,10,18,.22);color:#fff;font:900 28px system-ui;display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.14);touch-action:none;-webkit-tap-highlight-color:transparent;opacity:.38;transition:opacity .18s,transform .1s,background .18s,border-color .18s,box-shadow .18s}
+.b{position:absolute;pointer-events:auto;width:82px;height:82px;border-radius:25px;border:1px solid rgba(255,255,255,.22);background:rgba(5,10,18,.22);color:#fff;font:900 38px system-ui;display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.14);touch-action:none;-webkit-tap-highlight-color:transparent;opacity:.38;transition:opacity .18s,transform .1s,background .18s,border-color .18s,box-shadow .18s}
 .b.on,.b:active{transform:scale(.94);opacity:.8;background:rgba(90,205,255,.34)}
-#controls.started .b,#controls.started .b.on,#controls.started .b:active{opacity:0!important;background:transparent!important;border-color:transparent!important;box-shadow:none!important;color:transparent!important}
 #l{left:max(16px,env(safe-area-inset-left))!important;right:auto!important;top:max(72px,calc(env(safe-area-inset-top) + 54px))!important;bottom:auto!important}
 #r{right:max(16px,env(safe-area-inset-right))!important;left:auto!important;top:max(72px,calc(env(safe-area-inset-top) + 54px))!important;bottom:auto!important}
 #rotate{display:none;position:fixed!important;inset:0!important;width:100vw;height:100dvh;min-height:100vh;z-index:40;pointer-events:auto;align-items:center;justify-content:center;padding:28px;background:radial-gradient(circle at 50% 35%,rgba(24,51,74,.98),rgba(5,9,16,.99) 72%);color:#fff;text-align:center;font-family:system-ui;transform:none!important}
@@ -43,7 +42,6 @@ const badge=document.getElementById('powerBadge');
 const badgeIcon=document.getElementById('powerIcon');
 const badgeName=document.getElementById('powerName');
 let badgeTimer=null;
-let started=false;
 
 function syncOrientation(){
   const portrait=window.innerHeight>window.innerWidth;
@@ -54,12 +52,6 @@ function syncOrientation(){
 syncOrientation();
 window.addEventListener('resize',syncOrientation,{passive:true});
 window.addEventListener('orientationchange',()=>setTimeout(syncOrientation,100),{passive:true});
-
-function startPlay(){
-  if(started) return;
-  started=true;
-  controls.classList.add('started');
-}
 
 function showPowerBadge(text){
   const m=text.match(/POTERE:\s*([^\s]+)\s*([^!]+)!/i);
@@ -135,7 +127,7 @@ function kd(code){win()?.dispatchEvent(new KeyboardEvent('keydown',{code,bubbles
 function ku(code){win()?.dispatchEvent(new KeyboardEvent('keyup',{code,bubbles:true,cancelable:true}))}
 function bindHold(id,code){
   const b=document.getElementById(id);
-  const down=e=>{e.preventDefault();e.stopPropagation();startPlay();kd(code);b.classList.add('on')};
+  const down=e=>{e.preventDefault();e.stopPropagation();kd(code);b.classList.add('on')};
   const up=e=>{e.preventDefault();e.stopPropagation();ku(code);b.classList.remove('on')};
   b.addEventListener('pointerdown',down,{passive:false});
   ['pointerup','pointercancel','pointerleave'].forEach(x=>b.addEventListener(x,up,{passive:false}));
