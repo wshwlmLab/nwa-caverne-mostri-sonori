@@ -3,41 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>NWA · V4.5 Mobile</title>
+<title>NWA · V4.6 Mobile</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
 #game{position:fixed;inset:0;width:100%;height:100%;border:0;background:#05070b}
-#controls{display:none;position:fixed;inset:0;z-index:20;pointer-events:none}
-.b{position:absolute;pointer-events:auto;width:82px;height:82px;border-radius:25px;border:1px solid rgba(255,255,255,.22);background:rgba(5,10,18,.22);color:#fff;font:900 38px system-ui;display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.14);touch-action:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;opacity:.38;transition:opacity .18s,transform .1s,background .18s,border-color .18s,box-shadow .18s}
-.b.on,.b:active{transform:scale(.94);opacity:.8;background:rgba(90,205,255,.34)}
-#l{left:max(34px,calc(env(safe-area-inset-left) + 18px))!important;right:auto!important;top:max(72px,calc(env(safe-area-inset-top) + 54px))!important;bottom:auto!important}
-#r{right:max(34px,calc(env(safe-area-inset-right) + 18px))!important;left:auto!important;top:max(72px,calc(env(safe-area-inset-top) + 54px))!important;bottom:auto!important}
-#rotate{display:none;position:fixed!important;inset:0!important;width:100vw;height:100dvh;min-height:100vh;z-index:40;pointer-events:auto;align-items:center;justify-content:center;padding:28px;background:radial-gradient(circle at 50% 35%,rgba(24,51,74,.98),rgba(5,9,16,.99) 72%);color:#fff;text-align:center;font-family:system-ui;transform:none!important}
-#rotateCard{width:min(520px,92vw);padding:34px 24px;border-radius:28px;background:rgba(8,14,24,.96);border:2px solid rgba(170,225,255,.48);box-shadow:0 18px 60px rgba(0,0,0,.52),0 0 42px rgba(100,210,255,.14)}
-#rotateIcon{display:block;font-size:72px;line-height:1;margin-bottom:18px}
-#rotate strong{display:block;font-size:clamp(27px,8vw,42px);line-height:1.05}
-#rotate span:last-child{display:block;margin-top:13px;color:#cceeff;font-size:clamp(16px,4.5vw,22px);font-weight:800}
-#powerBadge{position:fixed;top:max(68px,env(safe-area-inset-top));left:50%;transform:translate(-50%,-12px) scale(.94);z-index:31;display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:rgba(8,12,20,.94);border:1px solid rgba(170,225,255,.45);box-shadow:0 10px 32px rgba(0,0,0,.35),0 0 24px rgba(100,210,255,.12);color:#fff;font:900 15px system-ui;letter-spacing:.02em;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}
+#stage{position:fixed;inset:0;width:100vw;height:100dvh;overflow:hidden;background:#05070b;touch-action:none}
+#game{position:absolute;inset:0;width:100%;height:100%;border:0;background:#05070b}
+#jump{display:none;position:absolute;right:max(25px,env(safe-area-inset-right));bottom:max(30px,env(safe-area-inset-bottom));z-index:35;width:66px;height:66px;margin:0;padding:0;place-items:center;border-radius:22px;border:1px solid rgba(204,237,255,.46);background:rgba(5,13,26,.34);color:white;font:900 42px system-ui;line-height:1;box-shadow:0 5px 18px rgba(0,0,0,.2);opacity:.68;touch-action:none;-webkit-tap-highlight-color:transparent;user-select:none}
+#jump:active,#jump.pressed{background:rgba(74,164,218,.52);opacity:.95;transform:scale(.96)}
+#powerBadge{position:absolute;top:max(68px,env(safe-area-inset-top));left:50%;transform:translate(-50%,-12px) scale(.94);z-index:31;display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:rgba(8,12,20,.94);border:1px solid rgba(170,225,255,.45);box-shadow:0 10px 32px rgba(0,0,0,.35),0 0 24px rgba(100,210,255,.12);color:#fff;font:900 15px system-ui;letter-spacing:.02em;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}
 #powerBadge.show{opacity:1;transform:translate(-50%,0) scale(1)}
 #powerIcon{font-size:24px;line-height:1}
 #powerName{white-space:nowrap}
-@media(pointer:coarse){#controls{display:block}}
-@media(orientation:portrait){#rotate{display:flex}#controls{display:none!important}}
+@media(pointer:coarse){#jump{display:grid}}
+/* In portrait, show the game itself sideways rather than a blocking instruction. */
+@media(orientation:portrait){#stage{inset:auto;left:50%;top:50%;width:100dvh;height:100vw;transform:translate(-50%,-50%) rotate(90deg);transform-origin:center}}
 </style>
 </head>
 <body>
+<div id="stage">
 <iframe id="game" title="NWA Le Caverne dei Mostri Sonori" allow="autoplay"></iframe>
-<div id="controls">
-<button class="b" id="l" aria-label="Sinistra">←</button>
-<button class="b" id="r" aria-label="Destra">→</button>
-</div>
-<div id="rotate" role="status" aria-live="polite"><div id="rotateCard"><span id="rotateIcon">↻</span><strong>GIRA IL TELEFONO</strong><span>Il gioco inizia con lo schermo orizzontale</span></div></div>
+<button id="jump" type="button" aria-label="Salta">↑</button>
 <div id="powerBadge"><span id="powerIcon">⚡</span><span id="powerName">POTERE</span></div>
+</div>
 <script>
 const frame=document.getElementById('game');
-const controls=document.getElementById('controls');
-const rotate=document.getElementById('rotate');
+const jump=document.getElementById('jump');
 const badge=document.getElementById('powerBadge');
 const badgeIcon=document.getElementById('powerIcon');
 const badgeName=document.getElementById('powerName');
@@ -63,16 +55,6 @@ function nwaTone(f=440,d=.09,type='sine',gain=.05,slide=0){
 window.nwaUnlockAudio=nwaUnlockAudio;
 window.nwaTone=nwaTone;
 
-function syncOrientation(){
-  const portrait=window.innerHeight>window.innerWidth;
-  rotate.style.setProperty('display',portrait?'flex':'none','important');
-  if(portrait) controls.style.setProperty('display','none','important');
-  else controls.style.removeProperty('display');
-}
-syncOrientation();
-window.addEventListener('resize',syncOrientation,{passive:true});
-window.addEventListener('orientationchange',()=>setTimeout(syncOrientation,100),{passive:true});
-
 function showPowerBadge(text){
   const m=text.match(/POTERE:\s*([^\s]+)\s*([^!]+)!/i);
   badgeIcon.textContent=m?m[1]:'⚡';
@@ -83,7 +65,7 @@ function showPowerBadge(text){
 }
 
 async function boot(){
-  let s=await fetch('index.html?v=452',{cache:'no-store'}).then(r=>r.text());
+  let s=await fetch('index.html?v=460',{cache:'no-store'}).then(r=>r.text());
   s=s.replace('r:7,life:4','r:22,life:4')
      .replace('r:12,life:5','r:30,life:5')
      .replace("ctx.lineWidth=p.source==='boss'?6:4","ctx.lineWidth=p.source==='boss'?10:8")
@@ -97,6 +79,8 @@ async function boot(){
      .replace("{q:'Quanto fa 6 × 4?',a:['20','24','28'],ok:1}","{q:'Quanto fa 14 × 6?',a:['74','84','94'],ok:1}")
      .replace("if(level<=1){const a=10+Math.floor(Math.random()*30),b=3+Math.floor(Math.random()*18)","if(level<=1){const a=100+Math.floor(Math.random()*400),b=20+Math.floor(Math.random()*80)")
      .replace('#touchGuide,#touchFeedback { display:block; }','#touchGuide,#touchFeedback { display:none!important; }')
+     .replace('NWA · VERSIONE 4.2 · MOBILE SAFE','NWA · VERSIONE 4.6 · MOBILE')
+     .replace('Trascina a sinistra per muoverti · swipe ↑ per saltare · tocca a destra per sparare.','Trascina a sinistra o destra e tieni premuto per muoverti · ↑ per saltare · tocca lo schermo per sparare.')
      .replace('#toast.show { opacity:1; }','#toast.show { opacity:1; } #toast { top:max(62px,env(safe-area-inset-top));bottom:auto; }')
      .replace("let toastTimer;function showToast(msg,ms=1700){toast.textContent=msg;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),ms);}","let toastTimer;function showToast(msg,ms=1700){toast.textContent=msg;toast.classList.toggle('levelIntro',String(msg).startsWith('Livello '));toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.classList.remove('show');toast.classList.remove('levelIntro')},ms);}")
      .replace("const t=state.world.theme;showToast(`Livello ${n}: ${t.name} · profondità ${t.depth}`,2700);","const t=state.world.theme;window.__nwaShownLevels=window.__nwaShownLevels||new Set();if(!window.__nwaShownLevels.has(n)){window.__nwaShownLevels.add(n);showToast(`Livello ${n}: ${t.name} · profondità ${t.depth}`,2200);}");
@@ -108,38 +92,64 @@ async function boot(){
     const d=frame.contentDocument;
     const toast=d&&d.getElementById('toast');
     if(!toast) return;
+    // Input gestures live inside the iframe; the jump button lives above it.
     const gestures=new Map();
+    let activeMoveId=null;
+    let activeDirection=null;
+    const setMoveDirection=direction=>{
+      if(activeDirection===direction)return;
+      if(activeDirection)ku(activeDirection);
+      activeDirection=direction;
+      if(direction)kd(direction);
+    };
+    const stopMovement=id=>{
+      if(activeMoveId===id){activeMoveId=null;setMoveDirection(null)}
+    };
     const onTouchDown=e=>{
       const overlay=d.getElementById('overlay');
-      if(e.pointerType!=='touch'||!overlay?.classList.contains('hidden')) return;
+      if(e.pointerType!=='touch'||!overlay?.classList.contains('hidden'))return;
       e.preventDefault();e.stopImmediatePropagation();
       try{nwaUnlockAudio()}catch{}
-      gestures.set(e.pointerId,{x:e.clientX,y:e.clientY,jumped:false});
+      const left=e.clientX<d.documentElement.clientWidth*.5;
+      const canMove=left&&activeMoveId===null;
+      if(canMove)activeMoveId=e.pointerId;
+      gestures.set(e.pointerId,{startX:e.clientX,startY:e.clientY,x:e.clientX,y:e.clientY,canMove,moved:false});
     };
     const onTouchMove=e=>{
       const g=gestures.get(e.pointerId);
-      if(!g) return;
+      if(!g)return;
       e.preventDefault();e.stopImmediatePropagation();
-      const dx=e.clientX-g.x,dy=e.clientY-g.y;
-      if(!g.jumped&&dy<-22&&Math.abs(dy)>Math.abs(dx)*.5){
-        g.jumped=true;kd('ArrowUp');setTimeout(()=>ku('ArrowUp'),120);
+      g.x=e.clientX;g.y=e.clientY;
+      if(!g.canMove)return;
+      const dx=g.x-g.startX,dy=g.y-g.startY;
+      if(Math.abs(dx)>=12&&Math.abs(dx)>Math.abs(dy)*.8){
+        g.moved=true;
+        setMoveDirection(dx<0?'ArrowLeft':'ArrowRight');
+      }else if(g.moved&&Math.abs(dx)<8){
+        setMoveDirection(null);
       }
     };
-    const onTouchEnd=e=>{
+    const finishTouch=(e,cancel=false)=>{
       const g=gestures.get(e.pointerId);
-      if(!g) return;
+      if(!g)return;
       e.preventDefault();e.stopImmediatePropagation();
-      const dx=e.clientX-g.x,dy=e.clientY-g.y;
-      if(!g.jumped&&Math.hypot(dx,dy)<18){kd('Space');ku('Space')}
+      stopMovement(e.pointerId);
+      if(!cancel){
+        const dx=e.clientX-g.startX,dy=e.clientY-g.startY;
+        if(!g.moved&&Math.hypot(dx,dy)<18){kd('Space');ku('Space')}
+      }
       gestures.delete(e.pointerId);
     };
     d.addEventListener('pointerdown',onTouchDown,{capture:true,passive:false});
     d.addEventListener('pointermove',onTouchMove,{capture:true,passive:false});
-    d.addEventListener('pointerup',onTouchEnd,{capture:true,passive:false});
-    d.addEventListener('pointercancel',e=>gestures.delete(e.pointerId),{capture:true});
+    d.addEventListener('pointerup',e=>finishTouch(e),{capture:true,passive:false});
+    d.addEventListener('pointercancel',e=>finishTouch(e,true),{capture:true,passive:false});
+    const releaseAll=()=>{setMoveDirection(null);activeMoveId=null;gestures.clear()};
+    d.addEventListener('visibilitychange',()=>{if(d.hidden)releaseAll()});
+    window.addEventListener('blur',releaseAll);
     const overlay=d.getElementById('overlay');
     const blockNativeTouch=e=>{
-      if(!overlay?.classList.contains('hidden')) return;
+      if(!overlay?.classList.contains('hidden'))return;
       e.preventDefault();e.stopImmediatePropagation();
     };
     ['touchstart','touchmove','touchend','touchcancel','gesturestart','gesturechange','gestureend','dblclick'].forEach(type=>d.addEventListener(type,blockNativeTouch,{capture:true,passive:false}));
@@ -161,16 +171,24 @@ function win(){return frame.contentWindow}
 function unlockAudio(){try{nwaUnlockAudio()}catch{}}
 function kd(code){win()?.dispatchEvent(new KeyboardEvent('keydown',{code,bubbles:true,cancelable:true}))}
 function ku(code){win()?.dispatchEvent(new KeyboardEvent('keyup',{code,bubbles:true,cancelable:true}))}
-function bindHold(id,code){
-  const b=document.getElementById(id);
-  const down=e=>{e.preventDefault();e.stopPropagation();unlockAudio();kd(code);b.classList.add('on')};
-  const up=e=>{e.preventDefault();e.stopPropagation();ku(code);b.classList.remove('on')};
-  b.addEventListener('pointerdown',down,{passive:false});
-  ['pointerup','pointercancel','pointerleave'].forEach(x=>b.addEventListener(x,up,{passive:false}));
-  ['contextmenu','selectstart','dragstart'].forEach(x=>b.addEventListener(x,e=>e.preventDefault()));
-}
-bindHold('l','ArrowLeft');
-bindHold('r','ArrowRight');
+let jumpReleaseTimer=null;
+const jumpDown=e=>{
+  e.preventDefault();e.stopPropagation();
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  unlockAudio();
+  jump.classList.add('pressed');
+  clearTimeout(jumpReleaseTimer);
+  kd('ArrowUp');
+  // Briefly hold the key even for a very quick tap (one physics frame is enough).
+  jumpReleaseTimer=setTimeout(()=>ku('ArrowUp'),135);
+};
+const jumpUp=e=>{
+  e.preventDefault();e.stopPropagation();
+  jump.classList.remove('pressed');
+};
+jump.addEventListener('pointerdown',jumpDown,{passive:false});
+['pointerup','pointercancel','pointerleave'].forEach(type=>jump.addEventListener(type,jumpUp,{passive:false}));
+['contextmenu','selectstart','dragstart'].forEach(type=>jump.addEventListener(type,e=>e.preventDefault()));
 </script>
 </body>
 </html>
