@@ -3,13 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>NWA · V4.6 Mobile</title>
+<title>NWA · V4.7 Mobile · Suoni e multitouch</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
-#game{position:fixed;inset:0;width:100%;height:100%;border:0;background:#05070b}
 #stage{position:fixed;inset:0;width:100vw;height:100dvh;overflow:hidden;background:#05070b;touch-action:none}
 #game{position:absolute;inset:0;width:100%;height:100%;border:0;background:#05070b}
+#touchpad{position:absolute;inset:0;z-index:25;pointer-events:none;touch-action:none;overscroll-behavior:none}
+#touchpad.active{pointer-events:auto}
+#soundToggle{position:absolute;z-index:36;right:max(18px,env(safe-area-inset-right));top:max(62px,env(safe-area-inset-top));width:38px;height:38px;padding:0;margin:0;border-radius:13px;border:1px solid rgba(210,232,255,.28);background:rgba(4,13,26,.35);font-size:19px;color:white;display:grid;place-items:center;opacity:.75;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#soundToggle:active{opacity:1}
 #jump{display:none;position:absolute;right:max(25px,env(safe-area-inset-right));bottom:max(30px,env(safe-area-inset-bottom));z-index:35;width:66px;height:66px;margin:0;padding:0;place-items:center;border-radius:22px;border:1px solid rgba(204,237,255,.46);background:rgba(5,13,26,.34);color:white;font:900 42px system-ui;line-height:1;box-shadow:0 5px 18px rgba(0,0,0,.2);opacity:.68;touch-action:none;-webkit-tap-highlight-color:transparent;user-select:none}
 #jump:active,#jump.pressed{background:rgba(74,164,218,.52);opacity:.95;transform:scale(.96)}
 #powerBadge{position:absolute;top:max(68px,env(safe-area-inset-top));left:50%;transform:translate(-50%,-12px) scale(.94);z-index:31;display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:rgba(8,12,20,.94);border:1px solid rgba(170,225,255,.45);box-shadow:0 10px 32px rgba(0,0,0,.35),0 0 24px rgba(100,210,255,.12);color:#fff;font:900 15px system-ui;letter-spacing:.02em;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s}
@@ -24,36 +27,170 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#05070b;tou
 <body>
 <div id="stage">
 <iframe id="game" title="NWA Le Caverne dei Mostri Sonori" allow="autoplay"></iframe>
+<div id="touchpad" aria-hidden="true"></div>
 <button id="jump" type="button" aria-label="Salta">↑</button>
+<button id="soundToggle" type="button" aria-label="Disattiva suoni" aria-pressed="false">🔊</button>
 <div id="powerBadge"><span id="powerIcon">⚡</span><span id="powerName">POTERE</span></div>
 </div>
 <script>
 const frame=document.getElementById('game');
 const jump=document.getElementById('jump');
+const stage=document.getElementById('stage');
+const touchpad=document.getElementById('touchpad');
+const soundToggle=document.getElementById('soundToggle');
 const badge=document.getElementById('powerBadge');
 const badgeIcon=document.getElementById('powerIcon');
 const badgeName=document.getElementById('powerName');
 let badgeTimer=null;
-let nwaAudioCtx=null,nwaAudioUnlocked=false;
+let nwaAudioCtx=null,nwaAudioUnlocked=false,nwaMaster=null,nwaEffects=null,nwaAmbience=null;
+let nwaSoundEnabled=true,nwaAmbientLevel=0,nwaAmbientScene=null,nwaNoiseBuffer=null;
+let nwaAmbientTimer=null;
 
+// Each depth has its own subtle continuous environmental texture. No musical loop.
+const nwaPalettes=[
+  {name:'aria e tempesta',freq:94,cut:1150,noise:.21,drone:.013,ring:720},
+  {name:'vento di montagna',freq:110,cut:1550,noise:.17,drone:.012,ring:900},
+  {name:'foresta',freq:135,cut:850,noise:.13,drone:.010,ring:520},
+  {name:'gocce nelle grotte',freq:84,cut:490,noise:.12,drone:.020,ring:670},
+  {name:'fiume sotterraneo',freq:71,cut:1080,noise:.20,drone:.015,ring:430},
+  {name:'miniere',freq:80,cut:630,noise:.12,drone:.023,ring:510},
+  {name:'cristalli',freq:128,cut:830,noise:.08,drone:.018,ring:1050},
+  {name:'magma',freq:52,cut:330,noise:.22,drone:.027,ring:290},
+  {name:'mantello',freq:47,cut:270,noise:.22,drone:.030,ring:210},
+  {name:'nucleo',freq:57,cut:420,noise:.17,drone:.029,ring:470}
+];
+function nwaInitAudio(){
+  if(nwaAudioCtx)return;
+  const AudioClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioClass)return;
+  nwaAudioCtx=new AudioClass();
+  nwaMaster=nwaAudioCtx.createGain();
+  nwaMaster.gain.value=nwaSoundEnabled?.83:0;
+  nwaMaster.connect(nwaAudioCtx.destination);
+  nwaEffects=nwaAudioCtx.createGain();
+  nwaEffects.gain.value=.88;
+  nwaEffects.connect(nwaMaster);
+  nwaAmbience=nwaAudioCtx.createGain();
+  nwaAmbience.gain.value=.68;
+  nwaAmbience.connect(nwaMaster);
+}
 function nwaUnlockAudio(){
-  if(!nwaAudioCtx) nwaAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  if(nwaAudioCtx.state==='suspended') nwaAudioCtx.resume();
-  if(!nwaAudioUnlocked){
-    const buffer=nwaAudioCtx.createBuffer(1,1,22050),source=nwaAudioCtx.createBufferSource();
-    source.buffer=buffer;source.connect(nwaAudioCtx.destination);source.start(0);nwaAudioUnlocked=true;
-  }
+  try{
+    nwaInitAudio();
+    if(!nwaAudioCtx)return;
+    if(nwaAudioCtx.state==='suspended')nwaAudioCtx.resume().catch(()=>{});
+    if(!nwaAudioUnlocked){
+      const buffer=nwaAudioCtx.createBuffer(1,1,22050);
+      const source=nwaAudioCtx.createBufferSource();
+      source.buffer=buffer;source.connect(nwaMaster);source.start(0);
+      nwaAudioUnlocked=true;
+    }
+    if(nwaAmbientLevel&&!nwaAmbientScene)nwaSetAmbientLevel(nwaAmbientLevel);
+  }catch(err){console.warn('NWA audio not available',err)}
 }
 function nwaTone(f=440,d=.09,type='sine',gain=.05,slide=0){
   nwaUnlockAudio();
+  if(!nwaAudioCtx||!nwaSoundEnabled)return;
   const o=nwaAudioCtx.createOscillator(),g=nwaAudioCtx.createGain(),now=nwaAudioCtx.currentTime;
   o.type=type;o.frequency.setValueAtTime(f,now);
   if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(40,f+slide),now+d);
-  g.gain.setValueAtTime(Math.min(1,gain*2.6),now);g.gain.exponentialRampToValueAtTime(.0001,now+d);
-  o.connect(g).connect(nwaAudioCtx.destination);o.start(now);o.stop(now+d);
+  g.gain.setValueAtTime(Math.min(.8,gain*2.6),now);
+  g.gain.exponentialRampToValueAtTime(.0001,now+d);
+  o.connect(g).connect(nwaEffects);o.start(now);o.stop(now+d);
 }
+function nwaGetNoise(){
+  if(nwaNoiseBuffer)return nwaNoiseBuffer;
+  const ctx=nwaAudioCtx,rate=ctx.sampleRate;
+  const buffer=ctx.createBuffer(1,rate*4,rate),samples=buffer.getChannelData(0);
+  let prev=0;
+  for(let i=0;i<samples.length;i++){
+    prev=(prev+(Math.random()*2-1)*.065)/1.065;
+    samples[i]=prev*.85;
+  }
+  // Blend the ends for a click-free repeating texture.
+  const fade=Math.floor(rate*.1),last=samples.length;
+  for(let i=0;i<fade;i++){
+    const p=i/fade;
+    samples[last-fade+i]=samples[last-fade+i]*(1-p)+samples[i]*p;
+  }
+  nwaNoiseBuffer=buffer;
+  return buffer;
+}
+function nwaStopScene(scene){
+  if(!scene||!nwaAudioCtx)return;
+  scene.root.gain.setTargetAtTime(0,nwaAudioCtx.currentTime,.22);
+  setTimeout(()=>{
+    for(const source of scene.sources)try{source.stop()}catch{}
+    try{scene.root.disconnect()}catch{}
+  },1200);
+}
+function nwaSetAmbientLevel(n){
+  nwaAmbientLevel=Math.max(0,Math.min(10,Number(n)||0));
+  if(!nwaAudioCtx||nwaAudioCtx.state==='closed')return;
+  if(nwaAmbientScene?.level===nwaAmbientLevel)return;
+  nwaStopScene(nwaAmbientScene);
+  nwaAmbientScene=null;
+  if(!nwaAmbientLevel)return;
+  const ctx=nwaAudioCtx,now=ctx.currentTime,p=nwaPalettes[nwaAmbientLevel-1];
+  const root=ctx.createGain();
+  root.gain.value=0;
+  root.connect(nwaAmbience);
+  const sources=[];
+  const noise=ctx.createBufferSource();
+  noise.buffer=nwaGetNoise();noise.loop=true;
+  const low=ctx.createBiquadFilter();low.type='lowpass';low.frequency.value=p.cut;
+  const wind=ctx.createGain();wind.gain.value=p.noise;
+  noise.connect(low).connect(wind).connect(root);
+  noise.start();sources.push(noise);
+  const drone=ctx.createOscillator();
+  drone.type='sine';drone.frequency.value=p.freq;
+  const droneGain=ctx.createGain();droneGain.gain.value=p.drone;
+  drone.connect(droneGain).connect(root);drone.start();sources.push(drone);
+  const harmonic=ctx.createOscillator();
+  harmonic.type='sine';harmonic.frequency.value=p.freq*1.506;
+  const overtone=ctx.createGain();overtone.gain.value=p.drone*.24;
+  harmonic.connect(overtone).connect(root);harmonic.start();sources.push(harmonic);
+  const wobble=ctx.createOscillator();
+  wobble.frequency.value=.085;
+  const modulation=ctx.createGain();modulation.gain.value=p.drone*.26;
+  wobble.connect(modulation).connect(droneGain.gain);
+  wobble.start();sources.push(wobble);
+  nwaAmbientScene={level:nwaAmbientLevel,root,sources};
+  root.gain.setTargetAtTime(1,now,.45);
+  if(!nwaAmbientTimer){
+    nwaAmbientTimer=setInterval(()=>{
+      if(document.hidden||!nwaAmbientScene||!nwaSoundEnabled||nwaAudioCtx?.state!=='running')return;
+      if(Math.random()>.55)return;
+      const {level,root}=nwaAmbientScene,p=nwaPalettes[level-1],time=nwaAudioCtx.currentTime;
+      const ping=nwaAudioCtx.createOscillator(),volume=nwaAudioCtx.createGain();
+      const soft=(level>=8),duration=soft?.7:1.05;
+      ping.type=soft?'triangle':'sine';
+      ping.frequency.setValueAtTime(p.ring*(.81+Math.random()*.38),time);
+      ping.frequency.exponentialRampToValueAtTime(Math.max(75,p.ring*.82),time+duration);
+      volume.gain.setValueAtTime(.0001,time);
+      volume.gain.exponentialRampToValueAtTime(soft?.003:.008,time+.035);
+      volume.gain.exponentialRampToValueAtTime(.0001,time+duration);
+      ping.connect(volume).connect(root);ping.start(time);ping.stop(time+duration+.03);
+    },2700);
+  }
+}
+function nwaToggleSound(){
+  nwaSoundEnabled=!nwaSoundEnabled;
+  nwaUnlockAudio();
+  if(nwaMaster&&nwaAudioCtx)nwaMaster.gain.setTargetAtTime(nwaSoundEnabled?.83:0,nwaAudioCtx.currentTime,.06);
+  soundToggle.textContent=nwaSoundEnabled?'🔊':'🔇';
+  soundToggle.setAttribute('aria-label',nwaSoundEnabled?'Disattiva suoni':'Attiva suoni');
+  soundToggle.setAttribute('aria-pressed',String(!nwaSoundEnabled));
+}
+soundToggle.addEventListener('pointerdown',e=>e.stopPropagation());
+soundToggle.addEventListener('click',e=>{e.stopPropagation();nwaToggleSound()});
+document.addEventListener('visibilitychange',()=>{
+  if(!nwaAudioCtx||!nwaMaster)return;
+  nwaMaster.gain.setTargetAtTime(document.hidden?0:(nwaSoundEnabled?.83:0),nwaAudioCtx.currentTime,.08);
+});
 window.nwaUnlockAudio=nwaUnlockAudio;
 window.nwaTone=nwaTone;
+window.nwaSetAmbientLevel=nwaSetAmbientLevel;
 
 function showPowerBadge(text){
   const m=text.match(/POTERE:\s*([^\s]+)\s*([^!]+)!/i);
@@ -65,7 +202,7 @@ function showPowerBadge(text){
 }
 
 async function boot(){
-  let s=await fetch('index.html?v=460',{cache:'no-store'}).then(r=>r.text());
+  let s=await fetch('index.html?v=470',{cache:'no-store'}).then(r=>r.text());
   s=s.replace('r:7,life:4','r:22,life:4')
      .replace('r:12,life:5','r:30,life:5')
      .replace("ctx.lineWidth=p.source==='boss'?6:4","ctx.lineWidth=p.source==='boss'?10:8")
@@ -79,11 +216,11 @@ async function boot(){
      .replace("{q:'Quanto fa 6 × 4?',a:['20','24','28'],ok:1}","{q:'Quanto fa 14 × 6?',a:['74','84','94'],ok:1}")
      .replace("if(level<=1){const a=10+Math.floor(Math.random()*30),b=3+Math.floor(Math.random()*18)","if(level<=1){const a=100+Math.floor(Math.random()*400),b=20+Math.floor(Math.random()*80)")
      .replace('#touchGuide,#touchFeedback { display:block; }','#touchGuide,#touchFeedback { display:none!important; }')
-     .replace('NWA · VERSIONE 4.2 · MOBILE SAFE','NWA · VERSIONE 4.6 · MOBILE')
+     .replace('NWA · VERSIONE 4.2 · MOBILE SAFE','NWA · VERSIONE 4.7 · MOBILE')
      .replace('Trascina a sinistra per muoverti · swipe ↑ per saltare · tocca a destra per sparare.','Trascina a sinistra o destra e tieni premuto per muoverti · ↑ per saltare · tocca lo schermo per sparare.')
      .replace('#toast.show { opacity:1; }','#toast.show { opacity:1; } #toast { top:max(62px,env(safe-area-inset-top));bottom:auto; }')
      .replace("let toastTimer;function showToast(msg,ms=1700){toast.textContent=msg;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),ms);}","let toastTimer;function showToast(msg,ms=1700){toast.textContent=msg;toast.classList.toggle('levelIntro',String(msg).startsWith('Livello '));toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{toast.classList.remove('show');toast.classList.remove('levelIntro')},ms);}")
-     .replace("const t=state.world.theme;showToast(`Livello ${n}: ${t.name} · profondità ${t.depth}`,2700);","const t=state.world.theme;window.__nwaShownLevels=window.__nwaShownLevels||new Set();if(!window.__nwaShownLevels.has(n)){window.__nwaShownLevels.add(n);showToast(`Livello ${n}: ${t.name} · profondità ${t.depth}`,2200);}");
+     .replace("const t=state.world.theme;showToast(`Livello ${n}: ${t.name} · profondità ${t.depth}`,2700);","const t=state.world.theme;parent.nwaSetAmbientLevel?.(n);window.__nwaShownLevels=window.__nwaShownLevels||new Set();if(!window.__nwaShownLevels.has(n)){window.__nwaShownLevels.add(n);showToast(`Livello ${n}: ${t.name} · profondità ${t.depth}`,2200);}");
 
   s=s.replace("const ans=document.getElementById('answers');r.a.forEach((txt,i)=>{const b=document.createElement('button');b.className='answer';b.textContent=`${i+1}. ${txt}`;b.onclick=()=>answerPuzzle(i);ans.appendChild(b);});","const ans=document.getElementById('answers'),numeric=r.a.every(txt=>/^-?\\d/.test(String(txt).trim())),labels=numeric?['A','B','C','D']:['1','2','3','4'];r.a.forEach((txt,i)=>{const b=document.createElement('button');b.className='answer';b.textContent=`${labels[i]}. ${txt}`;b.onclick=()=>answerPuzzle(i);ans.appendChild(b);});");
 
@@ -92,67 +229,75 @@ async function boot(){
     const d=frame.contentDocument;
     const toast=d&&d.getElementById('toast');
     if(!toast) return;
-    // Input gestures live inside the iframe; the jump button lives above it.
+    // A single parent-document input surface keeps movement alive while another finger jumps.
+    const overlay=d.getElementById('overlay');
     const gestures=new Map();
-    let activeMoveId=null;
-    let activeDirection=null;
-    const setMoveDirection=direction=>{
-      if(activeDirection===direction)return;
+    let activeMoveId=null,activeDirection=null;
+    const coarse=matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0;
+    function stopMovement(){
       if(activeDirection)ku(activeDirection);
-      activeDirection=direction;
-      if(direction)kd(direction);
-    };
-    const stopMovement=id=>{
-      if(activeMoveId===id){activeMoveId=null;setMoveDirection(null)}
-    };
-    const onTouchDown=e=>{
-      const overlay=d.getElementById('overlay');
-      if(e.pointerType!=='touch'||!overlay?.classList.contains('hidden'))return;
-      e.preventDefault();e.stopImmediatePropagation();
-      try{nwaUnlockAudio()}catch{}
-      const left=e.clientX<d.documentElement.clientWidth*.5;
-      const canMove=left&&activeMoveId===null;
+      activeDirection=null;activeMoveId=null;
+    }
+    function setMoveDirection(dir){
+      if(dir===activeDirection)return;
+      if(activeDirection)ku(activeDirection);
+      activeDirection=dir;
+      if(dir)kd(dir);
+    }
+    function releaseAll(){stopMovement();gestures.clear()}
+    function syncPad(){
+      const playing=coarse&&overlay.classList.contains('hidden');
+      touchpad.classList.toggle('active',playing);
+      if(!playing)releaseAll();
+    }
+    function padPosition(e){
+      const rect=touchpad.getBoundingClientRect();
+      // When the phone is upright, the entire landscape game is rotated clockwise.
+      if(window.innerHeight>window.innerWidth){
+        return {x:e.clientY-rect.top,y:rect.right-e.clientX};
+      }
+      return {x:e.clientX-rect.left,y:e.clientY-rect.top};
+    }
+    function padDown(e){
+      if(e.pointerType==='mouse')return;
+      e.preventDefault();e.stopPropagation();
+      unlockAudio();
+      const pos=padPosition(e);
+      const canMove=pos.x<touchpad.clientWidth*.52&&activeMoveId===null;
       if(canMove)activeMoveId=e.pointerId;
-      gestures.set(e.pointerId,{startX:e.clientX,startY:e.clientY,x:e.clientX,y:e.clientY,canMove,moved:false});
-    };
-    const onTouchMove=e=>{
+      gestures.set(e.pointerId,{startX:pos.x,startY:pos.y,canMove,moved:false});
+      try{touchpad.setPointerCapture(e.pointerId)}catch{}
+    }
+    function padMove(e){
       const g=gestures.get(e.pointerId);
       if(!g)return;
-      e.preventDefault();e.stopImmediatePropagation();
-      g.x=e.clientX;g.y=e.clientY;
+      e.preventDefault();e.stopPropagation();
       if(!g.canMove)return;
-      const dx=g.x-g.startX,dy=g.y-g.startY;
-      if(Math.abs(dx)>=12&&Math.abs(dx)>Math.abs(dy)*.8){
+      const pos=padPosition(e),dx=pos.x-g.startX,dy=pos.y-g.startY;
+      if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*.8){
         g.moved=true;
         setMoveDirection(dx<0?'ArrowLeft':'ArrowRight');
-      }else if(g.moved&&Math.abs(dx)<8){
+      }else if(g.moved&&Math.abs(dx)<7){
         setMoveDirection(null);
       }
-    };
-    const finishTouch=(e,cancel=false)=>{
+    }
+    function padFinish(e,cancelled){
       const g=gestures.get(e.pointerId);
       if(!g)return;
-      e.preventDefault();e.stopImmediatePropagation();
-      stopMovement(e.pointerId);
-      if(!cancel){
-        const dx=e.clientX-g.startX,dy=e.clientY-g.startY;
-        if(!g.moved&&Math.hypot(dx,dy)<18){kd('Space');ku('Space')}
-      }
+      e.preventDefault();e.stopPropagation();
+      const pos=padPosition(e),dx=pos.x-g.startX,dy=pos.y-g.startY;
+      if(activeMoveId===e.pointerId)stopMovement();
+      if(!cancelled&&!g.moved&&Math.hypot(dx,dy)<18){kd('Space');ku('Space')}
       gestures.delete(e.pointerId);
-    };
-    d.addEventListener('pointerdown',onTouchDown,{capture:true,passive:false});
-    d.addEventListener('pointermove',onTouchMove,{capture:true,passive:false});
-    d.addEventListener('pointerup',e=>finishTouch(e),{capture:true,passive:false});
-    d.addEventListener('pointercancel',e=>finishTouch(e,true),{capture:true,passive:false});
-    const releaseAll=()=>{setMoveDirection(null);activeMoveId=null;gestures.clear()};
-    d.addEventListener('visibilitychange',()=>{if(d.hidden)releaseAll()});
+    }
+    touchpad.addEventListener('pointerdown',padDown,{passive:false});
+    touchpad.addEventListener('pointermove',padMove,{passive:false});
+    touchpad.addEventListener('pointerup',e=>padFinish(e,false),{passive:false});
+    touchpad.addEventListener('pointercancel',e=>padFinish(e,true),{passive:false});
     window.addEventListener('blur',releaseAll);
-    const overlay=d.getElementById('overlay');
-    const blockNativeTouch=e=>{
-      if(!overlay?.classList.contains('hidden'))return;
-      e.preventDefault();e.stopImmediatePropagation();
-    };
-    ['touchstart','touchmove','touchend','touchcancel','gesturestart','gesturechange','gestureend','dblclick'].forEach(type=>d.addEventListener(type,blockNativeTouch,{capture:true,passive:false}));
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseAll()});
+    new MutationObserver(syncPad).observe(overlay,{attributes:true,attributeFilter:['class']});
+    syncPad();
     const obs=new MutationObserver(()=>{
       const txt=(toast.textContent||'').trim();
       if(txt.startsWith('POTERE:')){
